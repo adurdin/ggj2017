@@ -48,6 +48,7 @@ function hotReload()
             if not ok then
                 print("Load error: "..err)
             else
+                love.load()
                 print("Reloaded")
                 ok, err = pcall(mainCode) -- Execute program
                 if not ok then
