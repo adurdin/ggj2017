@@ -65,7 +65,7 @@ function hotReload()
             mainLastModified = love.filesystem.getLastModified("main.lua")
             ok, mainCode = pcall(love.filesystem.load,"main.lua")  -- Load program
             if not ok then
-                print("Load error: "..err)
+                print("Load error: "..mainCode)
             else
                 print("Reloaded")
                 ok, err = pcall(mainCode) -- Execute program
