@@ -3,8 +3,14 @@ function love.load()
     -- load an image
     educational_image = love.graphics.newImage("assets/education.jpg")
 
+    -- load some fonts
+    debugFont = love.graphics.newFont(16)
+
     -- set background colour
     love.graphics.setBackgroundColor(255,255,255)
+
+    -- set some default values
+    showFPSCounter = false
 end
 
 function love.update(dt)
@@ -22,6 +28,11 @@ function love.keypressed(key, unicode)
     if key == "escape" then
         love.event.quit()
     end
+
+    -- toggle FPS counter on ctrl+f
+    if key == "f" and (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) then
+        showFPSCounter = not showFPSCounter
+    end
 end
 
 function love.draw()
@@ -31,8 +42,16 @@ function love.draw()
     love.graphics.draw(educational_image, 0, 0)
     love.graphics.setColor(0,0,0,255)
     love.graphics.print("FRACK THE PLANET!", 300, 10)
-end
 
+    -- show the fps counter
+    if showFPSCounter then
+        love.graphics.setFont(debugFont)
+        love.graphics.setColor(0, 0, 0, 255)
+        love.graphics.rectangle("fill", 0, 0, 70, 20)
+        love.graphics.setColor(255, 255, 0, 255)
+        love.graphics.print("FPS: "..tostring(love.timer.getFPS()), 0, 0)
+    end
+end
 
 -- Hot reload
 
