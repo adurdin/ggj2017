@@ -21,5 +21,5 @@ function love.draw()
     love.graphics.setColor(255,255,255,255)
     love.graphics.draw(educational_image, 0, 0)
     love.graphics.setColor(0,0,0,255)
-    love.graphics.print("FRACK THE PLANET", 300, 10)
+    love.graphics.print("FRACK THE PLANET!", 300, 10)
 end
