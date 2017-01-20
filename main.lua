@@ -11,6 +11,10 @@ function love.load()
 
     -- set some default values
     showFPSCounter = false
+
+    -- create a raster terrain
+    terrainData = createRasterTerrain()
+    terrainImage = love.graphics.newImage(terrainData)
 end
 
 function love.update(dt)
@@ -21,6 +25,11 @@ function love.update(dt)
         -- Print to console
         print("Your are pressing space")
     end
+
+    -- update terrain data
+    terrainData:mapPixel(dummyTerrainPixel)
+    -- refresh the terrain image from its data
+    terrainImage:refresh()
 end
 
 function love.keypressed(key, unicode)
@@ -42,6 +51,10 @@ function love.draw()
     love.graphics.draw(educational_image, 0, 0)
     love.graphics.setColor(0,0,0,255)
     love.graphics.print("FRACK THE PLANET!", 300, 10)
+
+    -- show the terrain
+    love.graphics.setColor(255,255,255,255)
+    love.graphics.draw(terrainImage, 0, 0)
 
     -- show the fps counter
     if showFPSCounter then
@@ -76,4 +89,19 @@ function hotReload()
             end
         end
     end
+end
+
+-- Raster terrain
+
+function dummyTerrainPixel(x, y, r, g, b, a)
+    value = love.math.random(0, 255)
+    return value, value, value, 255
+end
+
+function createRasterTerrain()
+    local width = 1024
+    local height = 512
+    local data = love.image.newImageData(width, height)
+    data:mapPixel(dummyTerrainPixel)
+    return data
 end
