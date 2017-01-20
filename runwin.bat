@@ -1,2 +1,2 @@
 @echo off
-"C:\Program Files\LOVE\love.exe" --console "%~dp0"
+"C:\Program Files\LOVE\love.exe" --console .
