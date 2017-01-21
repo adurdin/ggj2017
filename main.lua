@@ -210,7 +210,8 @@ function love.draw()
     sonarShader:send("WORLD_HEIGHT", world.HEIGHT)
     sonarShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
     sonarShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
-    
+    sonarShader:send("debugModeEnabled", debugVars.debugModeEnabled)
+
     love.graphics.setShader(sonarShader)
     love.graphics.setCanvas(intermediateCanvas)
     -- Every frame:
@@ -220,11 +221,6 @@ function love.draw()
 
     love.graphics.setCanvas()
     love.graphics.setShader()
-
-    -- render terrain
-    if debugVars.debugModeEnabled == true then
-      terrain:draw(0, 0)
-    end
 
     -- render player
     love.graphics.setCanvas(intermediateCanvas)
@@ -333,21 +329,20 @@ TERRAIN_GRAVITY = 16
 -- maximum super falling speed (pixels/second)
 TERRAIN_TERMINAL_VELOCITY = 10
 
-function generateTerrainPixel(x, y, r, g, b, a, debug)
+function generateTerrainPixel(x, y, r, g, b, a)
     local noise = love.math.noise(x / terrain.width * 16, y / terrain.height * 16, 0.1) * 2
     local isDirt = (noise > 0.75)
     -- rgb channels can be used for color data
     -- alpha channel is terrain data and should not be rendered
     if y < 5 then
-      return 5, 162, 9, TERRAIN_DIRT_ALPHA_MIN
+        -- grass
+        return 5, 162, 9, TERRAIN_DIRT_ALPHA_MIN
     elseif isDirt then
+        -- dirt
         return 123, 69, 23, TERRAIN_DIRT_ALPHA_MIN
     else
-        if debug then
-            return 0, 0, 0, TERRAIN_GAS_ALPHA
-        else
-            return 123, 69, 23, TERRAIN_GAS_ALPHA
-        end
+        -- gas deposit
+        return 0, 0, 0, TERRAIN_GAS_ALPHA
     end
 end
 
@@ -367,6 +362,8 @@ function terrain:create()
     -- create a terrain and copy it into the second data buffer
     self.data:mapPixel(generateTerrainPixel)
     self.image = love.graphics.newImage(self.data)
+    self.image:setFilter("nearest", "nearest")
+    self.image:setWrap("repeat", "clamp")
 
     -- surface is the y coordinate of the topmost piece of dirt in the terrain
     self.surface = {}
@@ -590,6 +587,8 @@ function player:create()
     self.x, self.y = terrain_to_world(0, 0)
     self.vel = 0
     self.direction = 1 -- facing right
+    self.rot = 0
+    self.trailerRot = 0
 
     -- drilling
     self.isDrilling = false
@@ -676,11 +675,14 @@ function player:update(dt)
     end
 
     -- set our height to the surface height
-    self.y = terrain:worldSurface(self.x)
+    local nx, ny
+    self.y, nx, ny = terrain:worldSurface(self.x)
+    self.rot = lerp(self.rot, -math.atan2(nx, ny), 0.1)
 
     -- put the trailer behind us
     self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
-    self.trailerY = terrain:worldSurface(self.trailerX)
+    self.trailerY, nx, ny = terrain:worldSurface(self.trailerX)
+    self.trailerRot = lerp(self.trailerRot, -math.atan2(nx, ny), 0.1)
 
     -- put the drill in the trailer
     self.drillX = (self.trailerX - self.direction * math.floor(self.trailerQuadWidth / 2)) % world.WIDTH
@@ -694,7 +696,7 @@ function player:draw()
     local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
     for i=1,3 do
         love.graphics.draw(self.image, self.playerQuad, xs[i], self.y,
-            0, -- rotation
+            self.rot, -- rotation
             self.direction, 1, -- scale
             (self.playerQuadWidth / 2), self.playerQuadHeight)
     end
@@ -703,7 +705,7 @@ function player:draw()
     local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
     for i=1,3 do
         love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY,
-            0, -- rotation
+            self.trailerRot, -- rotation
             self.direction, 1, -- scale
             self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
     end
@@ -719,7 +721,7 @@ function player:draw()
             end
         end
         love.graphics.draw(self.drillImage, self.drillShaftQuad, self.drillX, self.drillY,
-            0, -- rotation
+            self.trailerRot, -- rotation
             self.drillDirection, self.drillDepth / self.drillShaftQuadHeight, -- scale
             (self.drillShaftQuadWidth / 2), 0)
         love.graphics.draw(self.drillImage, self.drillBitQuad, self.drillX, self.drillY + self.drillDepth,
