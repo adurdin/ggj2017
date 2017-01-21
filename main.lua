@@ -99,7 +99,7 @@ end
 
 function love.load()
     -- enable debugging if required
-    if arg[#arg] == "-debug" then require("mobdebug").start() end
+--    if arg[#arg] == "-debug" then require("mobdebug").start() end
 
     -- set up the window
     love.window.setMode(screen.WIDTH, screen.HEIGHT)
@@ -782,7 +782,12 @@ function createPerson()
                 self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
             end
         end
-        local limit = dt * lerp(100, 150, self.anger)
+
+        -- get y coord and normal
+        local y, nx, ny = terrain:worldSurface(self.x)
+
+        -- scale speed by y component of normal
+        local limit = dt * lerp(100, 150, self.anger) * ny * ny
         self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
 
         if math.abs(self.target - self.x) < 2 then
