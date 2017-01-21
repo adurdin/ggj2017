@@ -747,7 +747,7 @@ function createPerson()
 
     function person:update(dt)
         -- new target
-        if love.math.random() < (0.1 * dt) then
+        if love.math.random() < (0.5 * dt) then
             self.target = love.math.random(0, world.WIDTH)
             if math.abs(self.target - player.x) > 250 then
                 self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
