@@ -97,17 +97,17 @@ function love.load()
 
     -- set up the window
     love.window.setMode(screen.WIDTH, screen.HEIGHT)
-  
+
     -- When the game starts:
     -- load an image
     educational_image = love.graphics.newImage("assets/education.jpg")
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
     protestorSheet = love.graphics.newImage("assets/protestors.png")
     protestorQuad = love.graphics.newQuad(0 % 4, 0 / 4, 16, 16, 64, 64)
-    
+
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
     drawShader = love.graphics.newShader("assets/drawShader.fs")
-    
+
     intermediateCanvas = love.graphics.newCanvas(world.WIDTH, world.HEIGHT)
 
     -- load some fonts
@@ -115,7 +115,7 @@ function love.load()
 
     -- set background colour
     love.graphics.setBackgroundColor(255,255,255)
-    
+
     sonarVars.sourcePosition = {0.0, 0.0}
     sonarVars.radius = 0.5
     sonarVars.maxTime = sonarVars.radius * 10.0
@@ -139,9 +139,9 @@ function love.load()
 end
 
 function love.update(dt)
-  
+
     sonar:update(dt)
-  
+
     -- Every frame:
     hotReload()
 
@@ -167,7 +167,7 @@ function love.keypressed(key, unicode)
     if key == "escape" then
         love.event.quit()
     end
-    
+
     if love.keyboard.isDown("p") then
         if debugVars.debugModeEnabled == false then
             debugVars.debugModeEnabled = true
@@ -175,7 +175,7 @@ function love.keypressed(key, unicode)
             debugVars.debugModeEnabled = false
         end
     end
-    
+
     if love.keyboard.isDown("space") and not player.isDrilling then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
@@ -190,12 +190,12 @@ function love.keypressed(key, unicode)
 end
 
 function love.draw()
-  
+
     -- render terrain to a canvas
     -- love.graphics.setCanvas(terrainDataConavs)
     -- terrain:draw(0, 0, true)
     -- love.graphics.setCanvas()
-  
+
     sonarShader:send("sourcePosition", sonarVars.sourcePosition)
     sonarShader:send("radius", sonarVars.radius)
     sonarShader:send("maxTime", sonarVars.maxTime)
@@ -226,7 +226,7 @@ function love.draw()
     love.graphics.setCanvas(intermediateCanvas)
     player:draw()
     love.graphics.setCanvas()
-    
+
     love.graphics.setCanvas(intermediateCanvas)
     love.graphics.setColor(255, 0, 0, 255)
     love.graphics.rectangle("fill", 5, 5, 45, 45)
@@ -237,7 +237,7 @@ function love.draw()
     love.graphics.setColor(255, 255, 0, 255)
     love.graphics.rectangle("fill", 1390, 450, 45, 45)
     love.graphics.setCanvas()
-    
+
     -- final draw
     aspectRatioScale = screen.HEIGHT / world.HEIGHT
     
@@ -259,7 +259,7 @@ function love.draw()
         love.graphics.setColor(255, 255, 0, 255)
         love.graphics.print("FPS: "..tostring(love.timer.getFPS()), 0, 0)
     end
-    
+
     love.graphics.setColor(0,0,0,255)
     love.graphics.print("FRACK THE PLANET!", 300, 10)
 end
@@ -533,12 +533,12 @@ end
 sonar = {}
 
 function sonar:update(dt)
-  
+
     sonarVars.currentTime = sonarVars.currentTime - dt
     if sonarVars.currentTime < 0.0 then
         sonarVars.currentTime = 0.0
     end
-  
+
 end
 
 -- --------------------------------------------------------------------------------------
