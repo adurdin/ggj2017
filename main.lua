@@ -439,7 +439,8 @@ function player:create()
 end
 
 function player:calcY()
-    return terrain.surface[math.floor(self.x * TERRAIN_WIDTH / love.graphics.getWidth()) % TERRAIN_WIDTH] + 160
+    local y = terrain.surface[math.floor(self.x * TERRAIN_WIDTH / love.graphics.getWidth()) % TERRAIN_WIDTH]
+    return y / TERRAIN_HEIGHT * love.graphics.getHeight() / 2 + 160
 end
 
 function player:update(dt)
