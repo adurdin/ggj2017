@@ -494,7 +494,7 @@ function terrain:collapseColumn(x, dt)
             readY = readY - 1
         else
             -- it's sky all the way up
-            self.data:setPixel(x, writeY, 0, 140, 254, TERRAIN_SKY_ALPHA)
+            self.data:setPixel(x, writeY, 0, 140, 255, TERRAIN_SKY_ALPHA)
             writeY = writeY - 1
         end
     end
