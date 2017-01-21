@@ -238,15 +238,15 @@ function love.draw()
     -- final draw
     aspectRatioScale = screen.HEIGHT / world.HEIGHT
     
+    for x=0,people.COUNT do
+        people[x]:draw()
+    end
+    
     drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
     drawShader:send("cameraScale", camera.scale)
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, aspectRatioScale, aspectRatioScale)
     love.graphics.setShader()
-
-    for x=0,people.COUNT do
-        people[x]:draw()
-    end
 
     -- show the fps counter
     if showFPSCounter then
@@ -700,7 +700,9 @@ function createPerson()
         if person.target - person.x > 0 then dir = -1 end
 
         local y = terrain:worldSurface(self.x)
+        love.graphics.setCanvas(intermediateCanvas)
         love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 8)
+        love.graphics.setCanvas()
     end
     return person
 end
