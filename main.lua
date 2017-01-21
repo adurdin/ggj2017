@@ -587,6 +587,8 @@ function player:create()
     self.x, self.y = terrain_to_world(0, 0)
     self.vel = 0
     self.direction = 1 -- facing right
+    self.rot = 0
+    self.trailerRot = 0
 
     -- drilling
     self.isDrilling = false
@@ -673,11 +675,14 @@ function player:update(dt)
     end
 
     -- set our height to the surface height
-    self.y = terrain:worldSurface(self.x)
+    local nx, ny
+    self.y, nx, ny = terrain:worldSurface(self.x)
+    self.rot = lerp(self.rot, -math.atan2(nx, ny), 0.1)
 
     -- put the trailer behind us
     self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
-    self.trailerY = terrain:worldSurface(self.trailerX)
+    self.trailerY, nx, ny = terrain:worldSurface(self.trailerX)
+    self.trailerRot = lerp(self.trailerRot, -math.atan2(nx, ny), 0.1)
 
     -- put the drill in the trailer
     self.drillX = (self.trailerX - self.direction * math.floor(self.trailerQuadWidth / 2)) % world.WIDTH
@@ -691,7 +696,7 @@ function player:draw()
     local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
     for i=1,3 do
         love.graphics.draw(self.image, self.playerQuad, xs[i], self.y,
-            0, -- rotation
+            self.rot, -- rotation
             self.direction, 1, -- scale
             (self.playerQuadWidth / 2), self.playerQuadHeight)
     end
@@ -700,7 +705,7 @@ function player:draw()
     local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
     for i=1,3 do
         love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY,
-            0, -- rotation
+            self.trailerRot, -- rotation
             self.direction, 1, -- scale
             self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
     end
@@ -716,7 +721,7 @@ function player:draw()
             end
         end
         love.graphics.draw(self.drillImage, self.drillShaftQuad, self.drillX, self.drillY,
-            0, -- rotation
+            self.trailerRot, -- rotation
             self.drillDirection, self.drillDepth / self.drillShaftQuadHeight, -- scale
             (self.drillShaftQuadWidth / 2), 0)
         love.graphics.draw(self.drillImage, self.drillBitQuad, self.drillX, self.drillY + self.drillDepth,
