@@ -47,8 +47,8 @@ function love.update(dt)
     hotReload()
 
     if love.keyboard.isDown("space") then
-        -- Print to console
-        print("Your are pressing space")
+        -- wake the central column on space.
+        terrain:wakeColumn(math.floor(terrain.width / 2))
     end
 
     local x = 0
@@ -216,107 +216,35 @@ function createTerrain(terrain)
     for x=0,(terrain.width-1) do
         terrain.awakeColumns[x] = false
     end
-    -- start with one column awake
-    terrain.awakeColumns[math.floor(terrain.width / 2)] = true
 
     return terrain
 end
 
 function terrain:update(dt)
-    -- collapse a single column of terrain
-    function collapseColumn(x, dt)
-        -- start at the bottom of the column.
-        -- move pixels down according to their velocity.
-        -- update their velocity (if not 0) by dt.
-        -- they collide if they would exceed maxY;
-        -- if they collide, their velocity is capped to maxVelocity.
-        -- after each pixel is moved, maxVelocity becomes its velocity,
-        -- and maxY becomes its y - 1
-        local maxVelocity = 0 -- at the bottom of the terrain, all motion must stop
-        local maxY = self.height - 1 -- and pixels can't fall past the bottom of the terrain
-
-        local readY = self.height - 1
-        local writeY = self.height - 1
-
-        local stayAwake = false
-
-        while readY >= 0 or writeY >= 0 do
-            local r, g, b, a
-            if readY >= 0 then
-                r, g, b, a = terrain.data:getPixel(x, readY)
-
-                if a >= TERRAIN_DIRT_ALPHA_MIN and a <= TERRAIN_DIRT_ALPHA_MAX then
-                    local velocity = a * TERRAIN_ALPHA_TO_VELOCITY
-                    if velocity == 0 then
-                        -- this pixel isn't going to fall
-                        -- but pixels above will stop if they hit this one
-                        maxVelocity = 0
-                        writeY = writeY - 1
-                    else
-                        -- something is falling
-                        stayAwake = true
-
-                        local newY = math.floor(readY + velocity * dt)
-                        local newVelocity = math.floor(velocity + TERRAIN_GRAVITY * dt)
-
-                        -- check for collisions and limit distance and velocity
-                        if newY >= writeY then
-                            newY = writeY
-                            newVelocity = math.min(newVelocity, maxVelocity)
-                        end
-                        -- pixels above can't fall faster than this one if they hit it
-                        maxVelocity = newVelocity
-
-                        -- fill with void up to where it's fallen to
-                        for y=writeY,newY+1,-1 do
-                            terrain.data:setPixel(x, y, 0, 0, 0, TERRAIN_VOID_ALPHA)
-                        end
-
-                        -- and move the pixel
-                        local newA = math.floor(newVelocity / TERRAIN_ALPHA_TO_VELOCITY)
-                        terrain.data:setPixel(x, newY, r, g, b, newA)
-
-                        writeY = newY - 1
-                    end
-                elseif a == TERRAIN_SKY_ALPHA then
-                    -- Only sky from here up. Save the surface level and fall back to skyfilling
-                    self.surface[x] = readY
-                    readY = -1
-                else
-                    -- FIXME: later we want to keep track of the size of the void below each pixel maybe,
-                    -- so we can look it up without scanning the data again
-                    -- but for now do nothing
-                end
-                readY = readY - 1
-            else
-                -- it's sky all the way up
-                terrain.data:setPixel(x, writeY, 0, 140, 254, TERRAIN_SKY_ALPHA)
-                writeY = writeY - 1
-            end
-        end
-
-        return stayAwake
+    -- find out which columns are awake
+    local oldAwakeColumns = {}
+    for x=0,(self.width-1) do
+        oldAwakeColumns[x] = self.awakeColumns[x]
     end
 
     -- collapse each awake column
-    local newAwakeColumns = {}
     for x=0,(self.width-1) do
-        newAwakeColumns[x] = false
-    end
-    for x=0,(self.width-1) do
-        if self.awakeColumns[x] then
+        if oldAwakeColumns[x] then
             -- collapse this column
-            newAwakeColumns[x] = collapseColumn(x, dt)
-            -- wake up the columns beside it
-            if x > 0 then
-                newAwakeColumns[x - 1] = true
-            end
-            if x < self.width then
-                newAwakeColumns[x + 1] = true
+            local stayAwake = self:collapseColumn(x, dt)
+            self.awakeColumns[x] = stayAwake
+
+            -- wake up the columns beside it if it changed
+            if stayAwake then
+                if x > 0 and not oldAwakeColumns[x - 1] then
+                    self:wakeColumn(x - 1)
+                end
+                if x < (self.width - 1) and not oldAwakeColumns[x + 1] then
+                    self:wakeColumn(x + 1)
+                end
             end
         end
     end
-    self.awakeColumns = newAwakeColumns
 
     -- refresh the terrain image from its data
     terrain.image:refresh()
@@ -338,6 +266,96 @@ function terrain:draw(x, y, toCanvas)
     love.graphics.setBlendMode(unpack(prevBlendMode))
     love.graphics.setColor(unpack(prevColor))
     love.graphics.setColorMask(unpack(prevColorMask))
+end
+
+-- collapse a single column of terrain
+function terrain:collapseColumn(x, dt)
+    -- start at the bottom of the column.
+    -- move pixels down according to their velocity.
+    -- update their velocity (if not 0) by dt.
+    -- they collide if they would exceed maxY;
+    -- if they collide, their velocity is capped to maxVelocity.
+    -- after each pixel is moved, maxVelocity becomes its velocity,
+    -- and maxY becomes its y - 1
+    local maxVelocity = 0 -- at the bottom of the terrain, all motion must stop
+    local maxY = self.height - 1 -- and pixels can't fall past the bottom of the terrain
+
+    local readY = self.height - 1
+    local writeY = self.height - 1
+
+    local stayAwake = false
+
+    while readY >= 0 or writeY >= 0 do
+        local r, g, b, a
+        if readY >= 0 then
+            r, g, b, a = self.data:getPixel(x, readY)
+
+            if a >= TERRAIN_DIRT_ALPHA_MIN and a <= TERRAIN_DIRT_ALPHA_MAX then
+                local velocity = a * TERRAIN_ALPHA_TO_VELOCITY
+                if velocity == 0 then
+                    -- this pixel isn't going to fall
+                    -- but pixels above will stop if they hit this one
+                    maxVelocity = 0
+                    writeY = readY - 1
+                else
+                    -- something is falling
+                    local newY = math.floor(readY + velocity * dt)
+                    local newVelocity = math.floor(velocity + TERRAIN_GRAVITY * dt)
+
+                    -- check for collisions and limit distance and velocity
+                    if newY >= writeY then
+                        newY = writeY
+                        newVelocity = math.min(newVelocity, maxVelocity)
+                        -- print("collided at: "..dump(newY).." newY: "..dump(newY).." newVelocity: "..dump(newVelocity))
+                    end
+
+                    -- pixels above can't fall faster than this one if they hit it
+                    maxVelocity = newVelocity
+
+                    -- fill with void up to where it's fallen to
+                    for y=writeY,newY+1,-1 do
+                        self.data:setPixel(x, y, 0, 0, 0, TERRAIN_VOID_ALPHA)
+                    end
+
+                    -- and move the pixel
+                    local newA = math.floor(newVelocity / TERRAIN_ALPHA_TO_VELOCITY)
+                    self.data:setPixel(x, newY, r, g, b, newA)
+
+                    -- keep the column awake if the pixel moved
+                    if newVelocity > 0 then
+                        stayAwake = true
+                    end
+
+                    writeY = newY - 1
+                end
+            elseif a == TERRAIN_SKY_ALPHA then
+                -- Only sky from here up. Save the surface level and fall back to skyfilling
+                self.surface[x] = readY
+                readY = -1
+            else
+                -- FIXME: later we want to keep track of the size of the void below each pixel maybe,
+                -- so we can look it up without scanning the data again
+                -- but for now do nothing
+            end
+            readY = readY - 1
+        else
+            -- it's sky all the way up
+            self.data:setPixel(x, writeY, 0, 140, 254, TERRAIN_SKY_ALPHA)
+            writeY = writeY - 1
+        end
+    end
+
+    return stayAwake
+end
+
+function terrain:wakeColumn(x)
+    for y=0,(self.height-1) do
+        local r, g, b, a = self.data:getPixel(x, y)
+        if a == TERRAIN_DIRT_ALPHA_MIN then
+            self.data:setPixel(x, y, r, g, b, (TERRAIN_DIRT_ALPHA_MIN + 1))
+        end
+    end
+    self.awakeColumns[x] = true
 end
 
 player = {}
