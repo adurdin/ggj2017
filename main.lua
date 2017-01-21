@@ -10,7 +10,7 @@ function love.load()
     love.graphics.setBackgroundColor(255,255,255)
 
     -- set some default values
-    showFPSCounter = false
+    showFPSCounter = true
 
     -- create a raster terrain
     terrainData = createRasterTerrain()
@@ -27,7 +27,7 @@ function love.update(dt)
     end
 
     -- update terrain data
-    terrainData:mapPixel(dummyTerrainPixel)
+    collapseRasterTerrain(terrainData)
     -- refresh the terrain image from its data
     terrainImage:refresh()
 end
@@ -94,8 +94,27 @@ end
 -- Raster terrain
 
 function dummyTerrainPixel(x, y, r, g, b, a)
-    value = love.math.random(0, 255)
+    value = love.math.random(0, 1) * 255
     return value, value, value, 255
+end
+
+function collapseRasterTerrain(terrainData)
+    local width, height = terrainData:getDimensions()
+    local canFall;
+    for x=0,(width-1) do
+        canFall = false;
+        for y=(height-1),0,-1 do
+            local r, g, b, a = terrainData:getPixel(x, y)
+            if r == 255 then
+                if canFall then
+                    terrainData:setPixel(x, y+1, r, g, b, a)
+                    terrainData:setPixel(x, y, 0, 0, 0, 255)
+                end
+            else
+                canFall = true
+            end
+        end
+    end
 end
 
 function createRasterTerrain()
