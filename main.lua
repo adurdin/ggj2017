@@ -412,8 +412,12 @@ function player:create()
     self.vel = 0
 end
 
+function player:calcY()
+    return terrain.surface[math.floor(self.x + 25) % TERRAIN_WIDTH] - 50 + 200
+end
+
 function player:draw()
-    local y = terrain.surface[math.floor(self.x + 25) % TERRAIN_WIDTH] - 50 + 200
+    local y = self:calcY()
     love.graphics.setColor(255, 140, 0, 255)
     love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 50, 50, 0)
     love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 50, 50, 0)
