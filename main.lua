@@ -446,6 +446,7 @@ function player:update(dt)
     -- start drilling when the player presses down
     if love.keyboard.isDown("down") and not player.isDrilling then
         player.isDrilling = true
+        player.vel = 0
     end
 
     if player.isDrilling then
