@@ -14,8 +14,8 @@ world = {
 }
 
 screen = {
-  WIDTH = 800,
-  HEIGHT = 600
+  WIDTH = 1440,
+  HEIGHT = 500
 }
 
 camera = {
@@ -92,10 +92,13 @@ end
 -- LOVE CALLBACKS
 
 function love.load()
+    -- set up the window
+    love.window.setMode(screen.WIDTH, screen.HEIGHT)
+  
     -- When the game starts:
     -- load an image
     educational_image = love.graphics.newImage("assets/education.jpg")
-    level_image = love.graphics.newImage("assets/level.jpg")
+    singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
     densityMap = love.graphics.newImage("assets/density.jpg")
     
     defaultShader = love.graphics.newShader("assets/defaultShader.fs")
@@ -206,7 +209,7 @@ function love.draw()
     -- Every frame:
     -- show an educational image
     love.graphics.setColor(255,255,255,255)
-    love.graphics.draw(level_image, 0, 0)
+    love.graphics.draw(singelPixelImage, 0, 0, 0, world.WIDTH, world.HEIGHT)
 
     love.graphics.setCanvas()
     love.graphics.setShader()
