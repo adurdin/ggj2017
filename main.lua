@@ -85,7 +85,7 @@ function love.load()
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
     drawShader = love.graphics.newShader("assets/drawShader.fs")
     
-    intermediateCanvas = love.graphics.newCanvas(screen.WIDTH, screen.HEIGHT)
+    intermediateCanvas = love.graphics.newCanvas(world.WIDTH, world.HEIGHT)
 
     -- load some fonts
     debugFont = love.graphics.newFont(16)
@@ -177,6 +177,7 @@ function love.draw()
     sonarShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
     sonarShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
     sonarShader:send("SCREEN_HEIGHT", screen.HEIGHT)
+    -- sonarShader:send("TERRAIN_HEIGHT", terrain.HEIGHT)
 
     love.graphics.setShader(sonarShader)
     love.graphics.setCanvas(intermediateCanvas)
@@ -200,21 +201,21 @@ function love.draw()
     love.graphics.setCanvas()
     love.graphics.setShader()
     
+    -- defaultShader:send("WORLD_HEIGHT", world.HEIGHT)
+    -- defaultShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
+    -- defaultShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
+    -- defaultShader:send("SCREEN_HEIGHT", screen.HEIGHT)
+    -- defaultShader:send("TERRAIN_HEIGHT", terrain.HEIGHT)
     love.graphics.setShader(defaultShader)
     love.graphics.setCanvas(intermediateCanvas)
-    
     love.graphics.setColor(255, 0, 0, 255)
     love.graphics.rectangle("fill", 5, 5, 45, 45)
-    
     love.graphics.setColor(0, 255, 0, 255)
     love.graphics.rectangle("fill", 1390, 5, 45, 45)
-    
     love.graphics.setColor(0, 0, 255, 255)
     love.graphics.rectangle("fill", 5, 450, 45, 45)
-    
     love.graphics.setColor(255, 255, 0, 255)
     love.graphics.rectangle("fill", 1390, 450, 45, 45)
-    
     love.graphics.setCanvas()
     love.graphics.setShader()
     
