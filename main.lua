@@ -510,11 +510,33 @@ function terrain:wakeColumn(x)
     self.awakeColumns[x] = true
 end
 
+function wrapToRange(min, value, max)
+    local dif = max - min
+    local v = math.fmod(value, dif)
+    if (v < 0.0) then
+      v = v + dif
+    end
+    return math.floor(min + v)
+end
+
 function terrain:worldSurface(worldX)
+    -- warp worldx into terrain space
     local x, __ = world_to_terrain(worldX, 0)
-    local y = self.surface[math.floor(x)]
-    local __, worldY = terrain_to_world(0, y)
-    return worldY
+    if x then
+      -- sample terrain
+      local y1 = self.surface[wrapToRange(0, x-1.0, terrain.WIDTH)]
+      local y2 = self.surface[wrapToRange(0, x-0.0, terrain.WIDTH)]
+      local y3 = self.surface[wrapToRange(0, x+1.0, terrain.WIDTH)]
+      -- calculate normal
+      local dx = 2
+      local dy = y3 - y1
+      local sz = math.sqrt(dx*dx + dy*dy)
+      -- transform y into world space
+      local __, worldY = terrain_to_world(0, y2)
+      return worldY,-dy/sz, dx/sz
+    else
+      return nil, nil, nil
+    end
 end
 
 -- --------------------------------------------------------------------------------------
