@@ -108,6 +108,7 @@ function love.load()
     -- load an image
     educational_image = love.graphics.newImage("assets/education.jpg")
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
+
     protestorSheet = love.graphics.newImage("assets/protestors.png")
     protestorQuad = love.graphics.newQuad(0 % 4, 0 / 4, 16, 16, 64, 64)
 
