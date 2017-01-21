@@ -68,6 +68,7 @@ function love.load()
     level_image = love.graphics.newImage("assets/level.jpg")
     densityMap = love.graphics.newImage("assets/density.jpg")
     
+    defaultShader = love.graphics.newShader("assets/defaultShader.fs")
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
 
     -- load some fonts
@@ -165,7 +166,9 @@ function love.draw()
     end
 
     -- render player
+    love.graphics.setShader(defaultShader)
     player:draw()
+    love.graphics.setShader()
 
     -- show the fps counter
     if showFPSCounter then
