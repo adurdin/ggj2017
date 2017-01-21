@@ -18,7 +18,6 @@ vec2 terrain_to_world(vec2 p) {
         (p.y + WORLD_TERRAIN_Y / WORLD_HEIGHT));
 }
 
-
 vec2 world_to_terrain(vec2 p) {
     return
         vec2((p.x),
