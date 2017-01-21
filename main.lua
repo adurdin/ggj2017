@@ -48,10 +48,7 @@ end
 
 function love.update(dt)
   
-    sonarVars.currentTime = sonarVars.currentTime - dt
-    if sonarVars.currentTime < 0.0 then
-        sonarVars.currentTime = 0.0
-    end
+    sonar:update(dt)
   
     -- Every frame:
     hotReload()
@@ -404,9 +401,12 @@ end
 
 sonar = {}
 
-function sonar:update()
+function sonar:update(dt)
   
-  
+    sonarVars.currentTime = sonarVars.currentTime - dt
+    if sonarVars.currentTime < 0.0 then
+        sonarVars.currentTime = 0.0
+    end
   
 end
 
