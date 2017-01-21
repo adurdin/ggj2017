@@ -63,7 +63,7 @@ end
 function world_to_terrain(x, y)
     return
         (x * (terrain.WIDTH / world.WIDTH)),
-        ((y - TERRAIN_Y) * (terrain.HEIGHT / world.HEIGHT))
+        ((y - world.TERRAIN_Y) * (terrain.HEIGHT / world.HEIGHT))
 end
 
 function world_to_view(x, y)
@@ -176,7 +176,7 @@ function love.keypressed(key, unicode)
     if love.keyboard.isDown("space") and not player.isDrilling then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
-        sonarVars.sourcePosition = {((player.x + 24) / screenWidth), ((player:calcY() + 24) / screenHeight)}
+        sonarVars.sourcePosition = {(player.x / screenWidth), (player.y / screenHeight)}
         sonarVars.currentTime = sonarVars.maxTime;
     end
 
@@ -505,6 +505,13 @@ function terrain:wakeColumn(x)
     self.awakeColumns[x] = true
 end
 
+function terrain:worldSurface(worldX)
+    local x, __ = world_to_terrain(worldX, 0)
+    local y = self.surface[math.floor(x)]
+    local __, worldY = terrain_to_world(0, y)
+    return worldY
+end
+
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -569,11 +576,6 @@ function player:create()
     self.trailerQuad = love.graphics.newQuad(2, 1, 35, 47, imageWidth, imageHeight)
 end
 
-function player:calcY()
-    local y = terrain.surface[math.floor(self.x * terrain.WIDTH / love.graphics.getWidth()) % terrain.WIDTH]
-    return y / terrain.HEIGHT * love.graphics.getHeight() / 2 + 160
-end
-
 function player:update(dt)
     -- control inputs
     local retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
@@ -606,42 +608,38 @@ function player:update(dt)
             player.direction = 1
         end
         player.vel = player.vel + x * dt * 1000
-        player.x = (player.x + player.vel * dt) % terrain.WIDTH
+        player.x = (player.x + player.vel * dt) % world.WIDTH
 
         player.vel = player.vel * (1 - 10 * dt)
         if (math.abs(player.vel) < 0.05) then
             player.vel = 0
         end
     end
+
+    -- set our height to the surface height
+    self.y = terrain:worldSurface(self.x)
 end
 
 function player:draw()
-    local y = self:calcY()
-    love.graphics.setColor(255, 140, 0, 255)
-
-    local x = self.x % terrain.WIDTH
-    local wrappedX = x - terrain.WIDTH
-
-    love.graphics.rectangle("fill", x, y, 16, 10, 0)
-    love.graphics.rectangle("fill", wrappedX, y, 16, 10, 0)
-
     love.graphics.setColor(255, 255, 255, 255)
 
     local _, _, quadWidth, quadHeight = self.playerQuad:getViewport()
-    love.graphics.draw(self.image, self.playerQuad, x, y,
+    love.graphics.draw(self.image, self.playerQuad, self.x, self.y,
         0, -- rotation
         self.direction, 1, -- scale
         (quadWidth / 2), quadHeight)
-    -- draw the wrapped version of the sprite
-    love.graphics.draw(self.image, self.playerQuad, wrappedX, y,
-        0, -- rotation
-        self.direction, 1, -- scale
-        (quadWidth / 2), quadHeight)
+    -- FIXME
+    -- -- draw the wrapped version of the sprite
+    -- love.graphics.draw(self.image, self.playerQuad, wrappedX, y,
+    --     0, -- rotation
+    --     self.direction, 1, -- scale
+    --     (quadWidth / 2), quadHeight)
 
     -- draw the drill
     love.graphics.setColor(80, 80, 80, 255)
-    love.graphics.rectangle("fill", x, y, 8, player.drillDepth, 0)
-    love.graphics.rectangle("fill", wrappedX, y, 8, player.drillDepth, 0)
+    love.graphics.rectangle("fill", self.x, self.y, 8, player.drillDepth, 0)
+    -- FIXME
+    -- love.graphics.rectangle("fill", wrappedX, y, 8, player.drillDepth, 0)
 end
 
 function player:extendDrill(dt)
