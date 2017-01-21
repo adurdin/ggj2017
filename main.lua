@@ -99,6 +99,8 @@ function love.load()
     -- load an image
     educational_image = love.graphics.newImage("assets/education.jpg")
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
+    protestorSheet = love.graphics.newImage("assets/protestors.png")
+    protestorQuad = love.graphics.newQuad(0 % 4, 0 / 4, 16, 16, 64, 64)
     
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
     drawShader = love.graphics.newShader("assets/drawShader.fs")
@@ -693,7 +695,9 @@ function createPerson()
     end
     function person:draw()
         love.graphics.setColor(255, 140, 0, 255)
-        love.graphics.rectangle("fill", self.x, 100, 8, 18, 0)
+        local dir = 1
+        if person.target - person.x > 0 then dir = -1 end
+        love.graphics.draw(protestorSheet, protestorQuad, self.x, 195, 0, dir, 1, 8, 8)
     end
     return person
 end
