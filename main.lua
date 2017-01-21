@@ -2,16 +2,15 @@ sonarVars = {}
 debugVars = {}
 
 terrain = {
-  WIDTH = 1024,
-  HEIGHT = 160
+    WIDTH = 1024,
+    HEIGHT = 160
 }
 
 world = {
-  WIDTH = 1440,
-  HEIGHT = 500,
-  TERRAIN_Y = 200,
-  TERRAIN_SIZE = 200,
-  CORE_Y = 400
+    WIDTH = 1440,
+    HEIGHT = 500,
+    TERRAIN_Y = 200,
+    TERRAIN_SIZE = 200,
 }
 
 screen = {
@@ -38,20 +37,28 @@ camera = {
 --
 -- SPACE CONVERSIONS
 
-function texture_to_world(textureCoord)
-    return (textureCoord * vec2((world.WIDTH / terrain.WIDTH), (world.TERRAIN_SIZE / terrain.HEIGHT))) + vec2(world.TERRAIN_Y, 0.0)
+function terrain_to_world(x, y)
+    return
+        (x * (world.WIDTH / terrain.WIDTH)),
+        (y * (world.TERRAIN_SIZE / terrain.HEIGHT) + world.TERRAIN_Y)
 end
 
-function world_to_texture(worldCoord)
-    return (worldCoord - vec2(TERRAIN_Y, 0.0)) * vec2((terrain.WIDTH / world.WIDTH), (terrain.HEIGHT / world.HEIGHT))
+function world_to_terrain(x, y)
+    return
+        (x * (terrain.WIDTH / world.WIDTH)),
+        ((y - TERRAIN_Y) * (terrain.HEIGHT / world.HEIGHT))
 end
 
-function world_to_view(worldCoord)
-    return worldCoord * vec2((view.WIDTH / world.WIDTH), (view.HEIGHT / world.HEIGHT))
+function world_to_view(x, y)
+    return
+        (x * (screen.WIDTH / world.WIDTH)),
+        (y * (screen.HEIGHT / world.HEIGHT))
 end
 
-function view_to_world(viewCoord)
-    return viewCoord * vec2((world.WIDTH / view.WIDTH), (world.HEIGHT / view.HEIGHT))
+function view_to_world(x, y)
+    return
+        (x * (world.WIDTH / screen.WIDTH)),
+        (y * (world.HEIGHT / screen.HEIGHT))
 end
 
 -- --------------------------------------------------------------------------------------
@@ -166,6 +173,11 @@ function love.draw()
     sonarShader:send("maxTime", sonarVars.maxTime)
     sonarShader:send("currentTime", sonarVars.currentTime)
     sonarShader:send("densityMap", terrain.image)
+    sonarShader:send("WORLD_HEIGHT", world.HEIGHT)
+    sonarShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
+    sonarShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
+    sonarShader:send("SCREEN_HEIGHT", screen.HEIGHT)
+
     love.graphics.setShader(sonarShader)
     love.graphics.setCanvas(intermediateCanvas)
     -- Every frame:
@@ -502,7 +514,7 @@ player = {
 }
 
 function player:create()
-    self.x = 400
+    self.x, self.y = terrain_to_world(0, 0)
     self.vel = 0
     self.direction = 1 -- facing right
 
