@@ -99,7 +99,6 @@ function love.load()
     -- load an image
     educational_image = love.graphics.newImage("assets/education.jpg")
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
-    densityMap = love.graphics.newImage("assets/density.jpg")
     
     defaultShader = love.graphics.newShader("assets/defaultShader.fs")
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
