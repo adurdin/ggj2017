@@ -14,8 +14,8 @@ world = {
 }
 
 screen = {
-  WIDTH = 1440,
-  HEIGHT = 500
+  WIDTH = 800,
+  HEIGHT = 600
 }
 
 camera = {
@@ -236,10 +236,12 @@ function love.draw()
     love.graphics.setCanvas()
     
     -- final draw
+    aspectRatioScale = screen.HEIGHT / world.HEIGHT
+    
     drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
     drawShader:send("cameraScale", camera.scale)
     love.graphics.setShader(drawShader)
-    love.graphics.draw(intermediateCanvas, 0, 0)
+    love.graphics.draw(intermediateCanvas, 0, 0, 0, aspectRatioScale, aspectRatioScale)
     love.graphics.setShader()
 
     for x=0,people.COUNT do

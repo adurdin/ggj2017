@@ -63,37 +63,3 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     }
     return finalColourPixel;
 }
-
-
-
-/*
-
-previous version:
-
-vec4 dirtColour = vec4(0.48f, 0.26f, 0.09f, 1.0f);
-
-    vec4 density = Texel(densityMap, textureCoords);
-    vec4 pixel = vec4(density.r, density.g, density.b, 1.0f);
-    density.a = 1.0f;
-    
-    float normalizedTime = (currentTime / maxTime);
-    float positionInRadius = (1.0f - normalizedTime) * radius;
-    
-    float distance = sqrt(pow(abs(sourcePosition.x - textureCoords.x), 2) + pow(abs(sourcePosition.y - textureCoords.y), 2));
-    float normalizedDistance = distance / radius;
-    
-    // TODO(Gordon): This is a hack, we need a better solution
-    if (!(density.r > 0.9f && density.y < 0.1f)) {
-      if (currentTime > 0.0f) {
-          if (abs(distance - positionInRadius) < 0.001f) {
-              return vec4(0.0f, 1.0f, 0.0f, 1.0f); 
-          } else if (distance <= positionInRadius) {
-              return pixel * vec4(0.0f, abs(sin((normalizedDistance + normalizedTime) * 2 * 8 * M_PI)), 0.0f, 1.0f); 
-          } else {
-              return pixel;
-          }
-      }
-    }
-    return pixel;
-
-*/
