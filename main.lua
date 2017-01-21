@@ -92,6 +92,9 @@ end
 -- LOVE CALLBACKS
 
 function love.load()
+    -- enable debugging if required
+    if arg[#arg] == "-debug" then require("mobdebug").start() end
+
     -- set up the window
     love.window.setMode(screen.WIDTH, screen.HEIGHT)
   
