@@ -611,20 +611,32 @@ function player:update(dt)
     else
         -- can move and ping when not drilling
         local x = 0
+        local newDirection = self.direction
+        local directionChanged = false
         if moveLeft then
             x = -1
-            self.direction = -1
+            newDirection = -1
         end
         if moveRight then
             x = 1
-            self.direction = 1
+            newDirection = 1
         end
+        if newDirection ~= self.direction then
+            directionChanged = true
+            self.direction = newDirection
+        end
+
+        -- move the player
         self.vel = self.vel + x * dt * 1000
         self.x = (self.x + self.vel * dt) % world.WIDTH
-
         self.vel = self.vel * (1 - 10 * dt)
         if (math.abs(self.vel) < 0.05) then
             self.vel = 0
+        end
+
+        -- offset a bit when changing direction so it looks less weird
+        if directionChanged then
+            self.x = (self.x + self.direction * self.playerQuadWidth * 0.5) % world.WIDTH
         end
     end
 
@@ -639,24 +651,23 @@ end
 function player:draw()
     love.graphics.setColor(255, 255, 255, 255)
 
-    -- draw the fractor
-    local _, _, quadWidth, quadHeight = self.playerQuad:getViewport()
-    love.graphics.draw(self.image, self.playerQuad, self.x, self.y,
-        0, -- rotation
-        self.direction, 1, -- scale
-        (self.playerQuadWidth / 2), self.playerQuadHeight)
-    -- FIXME
-    -- -- draw the wrapped version of the sprite
-    -- love.graphics.draw(self.image, self.playerQuad, wrappedX, y,
-    --     0, -- rotation
-    --     self.direction, 1, -- scale
-    --     (quadWidth / 2), quadHeight)
+    -- draw the fractor (three copies because of world wrapping)
+    local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
+    for i=1,3 do
+        love.graphics.draw(self.image, self.playerQuad, xs[i], self.y,
+            0, -- rotation
+            self.direction, 1, -- scale
+            (self.playerQuadWidth / 2), self.playerQuadHeight)
+    end
 
-    -- draw the trailer
-    love.graphics.draw(self.image, self.trailerQuad, self.trailerX, self.trailerY,
-        0, -- rotation
-        self.direction, 1, -- scale
-        self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
+    -- draw the trailer (three copies because of world wrapping)
+    local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
+    for i=1,3 do
+        love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY,
+            0, -- rotation
+            self.direction, 1, -- scale
+            self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
+    end
 
     -- draw the drill
     love.graphics.setColor(80, 80, 80, 255)
