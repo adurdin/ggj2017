@@ -691,16 +691,14 @@ function createPerson()
             end
         end
         local limit = dt * 100
-        self.x = self.x + clamp(-limit, self.target - self.x, limit)
+        self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
     end
     function person:draw()
-        love.graphics.setColor(255, 140, 0, 255)
-
         local dir = 1
         if person.target - person.x > 0 then dir = -1 end
 
         local y = terrain:worldSurface(self.x)
-        love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 8)
+        love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 12)
     end
     return person
 end
