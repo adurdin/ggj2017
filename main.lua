@@ -47,13 +47,7 @@ function love.load()
 end
 
 function love.update(dt)
-    if love.mouse.isDown(1) then
-        screenWidth = love.graphics.getWidth()
-        screenHeight = love.graphics.getHeight()
-        sonarVars.sourcePosition = {(love.mouse.getX() / screenWidth), (love.mouse.getY() / screenHeight)}
-        sonarVars.currentTime = sonarVars.maxTime;
-    end
-    
+  
     sonarVars.currentTime = sonarVars.currentTime - dt
     if sonarVars.currentTime < 0.0 then
         sonarVars.currentTime = 0.0
@@ -62,7 +56,7 @@ function love.update(dt)
     -- Every frame:
     hotReload()
 
-    if love.keyboard.isDown("space") then
+    if love.keyboard.isDown("o") then
         -- wake the central column on space.
         terrain:wakeColumn(math.floor(terrain.width / 2))
     end
@@ -90,6 +84,13 @@ function love.keypressed(key, unicode)
         else
             debugVars.debugModeEnabled = false
         end
+    end
+    
+    if love.keyboard.isDown("space") then
+        screenWidth = love.graphics.getWidth()
+        screenHeight = love.graphics.getHeight()
+        sonarVars.sourcePosition = {((player.x + 24) / screenWidth), ((player:calcY() + 24) / screenHeight)}
+        sonarVars.currentTime = sonarVars.maxTime;
     end
 
     -- toggle FPS counter on ctrl+f
@@ -390,6 +391,27 @@ function terrain:wakeColumn(x)
         end
     end
     self.awakeColumns[x] = true
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- SONAR
+
+sonar = {}
+
+function sonar:update()
+  
+  
+  
 end
 
 -- --------------------------------------------------------------------------------------
