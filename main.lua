@@ -1,4 +1,5 @@
 sonarVars = {}
+debugVars = {}
 
 function love.load()
     -- When the game starts:
@@ -19,6 +20,8 @@ function love.load()
     sonarVars.radius = 0.5
     sonarVars.maxTime = sonarVars.radius * 10.0
     sonarVars.currentTime = 0.0
+
+    debugVars.debugModeEnabled = false
 
     -- set some default values
     showFPSCounter = true
@@ -67,6 +70,14 @@ function love.keypressed(key, unicode)
     if key == "escape" then
         love.event.quit()
     end
+    
+    if love.keyboard.isDown("p") then
+        if debugVars.debugModeEnabled == false then
+            debugVars.debugModeEnabled = true
+        else
+            debugVars.debugModeEnabled = false
+        end
+    end
 
     -- toggle FPS counter on ctrl+f
     if key == "f" and (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) then
@@ -95,7 +106,9 @@ function love.draw()
     love.graphics.setShader()
 
     -- render terrain
-    terrain:draw(0, 0)
+    if debugVars.debugModeEnabled == true then
+      terrain:draw(0, 0)
+    end
 
     -- render player
     player:draw()
