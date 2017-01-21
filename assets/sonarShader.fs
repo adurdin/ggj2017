@@ -11,6 +11,7 @@ extern Image densityMap;
 extern float WORLD_HEIGHT;
 extern float WORLD_TERRAIN_Y;
 extern float WORLD_TERRAIN_SIZE;
+extern bool debugModeEnabled;
 
 vec2 terrain_to_world(vec2 p) {
     return
@@ -29,7 +30,7 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
 {
     vec4 COLOUR_BLACK = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     vec4 COLOUR_SKY = vec4(0.0f, 0.55f, 0.99f, 1.0f);
-    vec4 COLOUR_DIRT = vec4(0.48f, 0.26f, 0.09f, 1.0f);
+    vec4 COLOUR_DIRT = vec4(0.4823529412f, 0.2705882353f, 0.09019607843f, 1.0f);
 
     /* transforms texture coordinates for density map */
     
@@ -50,8 +51,15 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     } else {
         densityMapPixel = Texel(densityMap, densityMapTextureCoords);
         terrainType = densityMapPixel.a * 255.0f;
-        densityMapPixel.a = 1.0f;
-        finalColourPixel = vec4(densityMapPixel.r, densityMapPixel.g, densityMapPixel.b, 1.0f);
+        if (terrainType == M_TERRAIN_TYPE_GAS || terrainType == M_TERRAIN_TYPE_VOID) {
+            if (debugModeEnabled) {
+                finalColourPixel = vec4(densityMapPixel.rgb, 1.0f);
+            } else {
+                finalColourPixel = vec4(COLOUR_DIRT.rgb, 1.0f);
+            }
+        } else {
+            finalColourPixel = vec4(densityMapPixel.rgb, 1.0f);
+        }
     }
     
     float normalizedTime = (currentTime / maxTime);
