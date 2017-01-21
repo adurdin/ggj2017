@@ -98,7 +98,7 @@ function love.draw()
     terrain:draw(0, 0)
 
     -- render player
-    player:draw(0, 0)
+    player:draw()
 
     -- show the fps counter
     if showFPSCounter then
@@ -250,7 +250,8 @@ function player:create()
     self.vel = 0
 end
 
-function player:draw(x, y)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, 20, 50, 50, 0)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, 20, 50, 50, 0)
+function player:draw()
+    local y = terrain.surface[math.floor(self.x) % TERRAIN_WIDTH] - 50
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 50, 50, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 50, 50, 0)
 end
