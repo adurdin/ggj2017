@@ -462,9 +462,9 @@ function player:update(dt)
         local x = 0
         if love.keyboard.isDown("a") then x = -1 end
         if love.keyboard.isDown("d") then x =  1 end
-        player.vel = player.vel + x * dt * 5000
+        player.vel = player.vel + x * dt * 1000
         player.x = player.x + player.vel * dt
-        player.vel = player.vel * (1 - 0.01 * dt * 1000)
+        player.vel = player.vel * (1 - 10 * dt)
     end
 end
 
