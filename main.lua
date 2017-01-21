@@ -6,7 +6,7 @@ function love.load()
     educational_image = love.graphics.newImage("assets/education.jpg")
     level_image = love.graphics.newImage("assets/level.jpg")
     densityMap = love.graphics.newImage("assets/density.jpg")
-
+    
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
 
     -- load some fonts
@@ -66,11 +66,16 @@ end
 
 function love.draw()
   
+    -- render terrain to a canvas
+    -- love.graphics.setCanvas(terrainDataConavs)
+    -- terrain:draw(0, 0, true)
+    -- love.graphics.setCanvas()
+  
     sonarShader:send("sourcePosition", sonarVars.sourcePosition)
     sonarShader:send("radius", sonarVars.radius)
     sonarShader:send("maxTime", sonarVars.maxTime)
     sonarShader:send("currentTime", sonarVars.currentTime)
-    sonarShader:send("densityMap", densityMap)
+    sonarShader:send("densityMap", terrain.readImage)
     love.graphics.setShader(sonarShader)
     -- Every frame:
     -- show an educational image
@@ -78,9 +83,6 @@ function love.draw()
     love.graphics.draw(level_image, 0, 0)
 
     love.graphics.setShader()
-
-    -- render terrain
-    terrain:draw(0, 0)
 
     -- show the fps counter
     if showFPSCounter then
@@ -137,7 +139,7 @@ TERRAIN_SKY_ALPHA = 129
 
 terrain = {}
 
-function generateTerrainPixel(x, y, r, g, b, a)
+function generateTerrainPixel(x, y, r, g, b, a, debug)
     local noise = love.math.noise(x / terrain.width * 16, y / terrain.height * 16, 0.1) * 2
     local isDirt = (noise > 0.75)
     -- rgb channels can be used for color data
@@ -145,7 +147,11 @@ function generateTerrainPixel(x, y, r, g, b, a)
     if isDirt then
         return 123, 69, 23, TERRAIN_DIRT_ALPHA_MIN
     else
-        return 0, 0, 0, TERRAIN_GAS_ALPHA
+        if debug then
+            return 0, 0, 0, TERRAIN_GAS_ALPHA
+        else
+            return 123, 69, 23, TERRAIN_GAS_ALPHA
+        end
     end
 end
 
@@ -203,7 +209,7 @@ function terrain:update()
     local t = terrain.readImage; terrain.readImage = terrain.writeImage; terrain.writeImage = t;
 end
 
-function terrain:draw(x, y)
+function terrain:draw(x, y, toCanvas)
     -- save state
     local prevBlendMode = {love.graphics.getBlendMode()}
     local prevColor = {love.graphics.getColor()}
@@ -212,7 +218,7 @@ function terrain:draw(x, y)
     -- don't use alpha when drawing terrain, it's a data channel
     love.graphics.setBlendMode("replace", "premultiplied")
     love.graphics.setColor(255,255,255,255)
-    love.graphics.setColorMask(true, true, true, false)
+    love.graphics.setColorMask(true, true, true, toCanvas)
     love.graphics.draw(terrain.readImage, 0, 0)
 
     -- restore state
