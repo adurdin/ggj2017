@@ -110,7 +110,6 @@ function love.load()
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
 
     protestorSheet = love.graphics.newImage("assets/protestors.png")
-    protestorQuad = love.graphics.newQuad(0 % 4, 0 / 4, 16, 16, 64, 64)
 
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
     drawShader = love.graphics.newShader("assets/drawShader.fs")
@@ -745,6 +744,9 @@ function createPerson()
     person.target = person.x
     person.anger = love.math.random(0, 1)
     person.accumulator = 0
+    person.quad = love.graphics.newQuad(love.math.random(0, 3) * 16,
+                                        love.math.random(0, 3) * 16,
+                                        16, 16, 64, 64)
 
     function person:update(dt)
         -- new target
@@ -777,7 +779,8 @@ function createPerson()
         end
 
         love.graphics.setCanvas(intermediateCanvas)
-        love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 12)
+        love.graphics.setColor(255, 255, 255, 255)
+        love.graphics.draw(protestorSheet, self.quad, self.x, y, 0, dir, 1, 8, 12)
         love.graphics.setCanvas()
     end
     return person
