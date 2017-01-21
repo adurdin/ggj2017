@@ -521,16 +521,19 @@ function wrapToRange(min, value, max)
     return math.floor(min + v)
 end
 
-function terrain:worldSurface(worldX)
+function terrain:worldSurface(worldX, vx)
+    if vx == nil then
+        vx = 1.0
+    end
     -- warp worldx into terrain space
     local x, __ = world_to_terrain(worldX, 0)
     if x then
       -- sample terrain
-      local y1 = self.surface[wrapToRange(0, x-1.0, terrain.WIDTH)]
+      local y1 = self.surface[wrapToRange(0, x-vx, terrain.WIDTH)]
       local y2 = self.surface[wrapToRange(0, x-0.0, terrain.WIDTH)]
-      local y3 = self.surface[wrapToRange(0, x+1.0, terrain.WIDTH)]
+      local y3 = self.surface[wrapToRange(0, x+vx, terrain.WIDTH)]
       -- calculate normal
-      local dx = 2
+      local dx = vx * 2
       local dy = y3 - y1
       local sz = math.sqrt(dx*dx + dy*dy)
       -- transform y into world space
@@ -677,12 +680,12 @@ function player:update(dt)
 
     -- set our height to the surface height
     local nx, ny
-    self.y, nx, ny = terrain:worldSurface(self.x)
+    self.y, nx, ny = terrain:worldSurface(self.x, 5)
     self.rot = lerp(self.rot, -math.atan2(nx, ny), 0.1)
 
     -- put the trailer behind us
     self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
-    self.trailerY, nx, ny = terrain:worldSurface(self.trailerX)
+    self.trailerY, nx, ny = terrain:worldSurface(self.trailerX, 5)
     self.trailerRot = lerp(self.trailerRot, -math.atan2(nx, ny), 0.1)
 
     -- put the drill in the trailer
