@@ -100,7 +100,6 @@ function love.load()
     educational_image = love.graphics.newImage("assets/education.jpg")
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
     
-    defaultShader = love.graphics.newShader("assets/defaultShader.fs")
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
     drawShader = love.graphics.newShader("assets/drawShader.fs")
     
@@ -219,18 +218,10 @@ function love.draw()
     end
 
     -- render player
-    love.graphics.setShader(defaultShader)
     love.graphics.setCanvas(intermediateCanvas)
     player:draw()
     love.graphics.setCanvas()
-    love.graphics.setShader()
     
-    -- defaultShader:send("WORLD_HEIGHT", world.HEIGHT)
-    -- defaultShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
-    -- defaultShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
-    -- defaultShader:send("SCREEN_HEIGHT", screen.HEIGHT)
-    -- defaultShader:send("TERRAIN_HEIGHT", terrain.HEIGHT)
-    love.graphics.setShader(defaultShader)
     love.graphics.setCanvas(intermediateCanvas)
     love.graphics.setColor(255, 0, 0, 255)
     love.graphics.rectangle("fill", 5, 5, 45, 45)
@@ -241,7 +232,6 @@ function love.draw()
     love.graphics.setColor(255, 255, 0, 255)
     love.graphics.rectangle("fill", 1390, 450, 45, 45)
     love.graphics.setCanvas()
-    love.graphics.setShader()
     
     -- final draw
     drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
