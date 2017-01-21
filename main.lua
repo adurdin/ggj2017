@@ -10,7 +10,7 @@ world = {
     WIDTH = 1440,
     HEIGHT = 500,
     TERRAIN_Y = 200,
-    TERRAIN_SIZE = 200,
+    TERRAIN_SIZE = 200
 }
 
 screen = {
@@ -176,7 +176,7 @@ function love.keypressed(key, unicode)
     if love.keyboard.isDown("space") and not player.isDrilling then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
-        sonarVars.sourcePosition = {(player.x / screenWidth), (player.y / screenHeight)}
+        sonarVars.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
         sonarVars.currentTime = sonarVars.maxTime;
     end
 
@@ -201,9 +201,7 @@ function love.draw()
     sonarShader:send("WORLD_HEIGHT", world.HEIGHT)
     sonarShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
     sonarShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
-    sonarShader:send("SCREEN_HEIGHT", screen.HEIGHT)
-    -- sonarShader:send("TERRAIN_HEIGHT", terrain.HEIGHT)
-
+    
     love.graphics.setShader(sonarShader)
     love.graphics.setCanvas(intermediateCanvas)
     -- Every frame:

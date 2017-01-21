@@ -11,7 +11,19 @@ extern Image densityMap;
 extern float WORLD_HEIGHT;
 extern float WORLD_TERRAIN_Y;
 extern float WORLD_TERRAIN_SIZE;
-extern float SCREEN_HEIGHT;
+
+vec2 terrain_to_world(vec2 p) {
+    return
+        vec2((p.x),
+        (p.y + WORLD_TERRAIN_Y / WORLD_HEIGHT));
+}
+
+
+vec2 world_to_terrain(vec2 p) {
+    return
+        vec2((p.x),
+        ((p.y - WORLD_TERRAIN_Y / WORLD_HEIGHT) * (WORLD_HEIGHT / WORLD_TERRAIN_SIZE)));
+}
 
 vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
 {
@@ -19,9 +31,11 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     vec4 COLOUR_SKY = vec4(0.0f, 0.55f, 0.99f, 1.0f);
     vec4 COLOUR_DIRT = vec4(0.48f, 0.26f, 0.09f, 1.0f);
 
-    /* transforms texture coordinates for density map */                                                               
-    vec2 densityMapTextureCoords = textureCoords * vec2(1.0f, SCREEN_HEIGHT / WORLD_TERRAIN_SIZE)
-        - vec2(0.0f, WORLD_TERRAIN_Y / WORLD_HEIGHT * SCREEN_HEIGHT / WORLD_TERRAIN_SIZE);
+    /* transforms texture coordinates for density map */
+    
+    vec2 terrainCoords = world_to_terrain(textureCoords);
+    
+    vec2 densityMapTextureCoords = terrainCoords;
     
     vec4 densityMapPixel = COLOUR_BLACK;
     vec4 finalColourPixel = COLOUR_BLACK;
