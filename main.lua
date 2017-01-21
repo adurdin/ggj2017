@@ -41,6 +41,10 @@ function clamp(min, val, max)
     return math.max(min, math.min(val, max))
 end
 
+function lerp(v1, v2, t)
+    return v1 + (v2 - v1) * t
+end
+
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -694,6 +698,7 @@ function createPerson()
     local person = {}
     person.x = love.math.random(0, world.WIDTH)
     person.target = person.x
+    person.anger = love.math.random(0, 1)
     person.accumulator = 0
 
     function person:update(dt)
@@ -708,13 +713,13 @@ function createPerson()
                 self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
             end
         end
-        local limit = dt * 100
+        local limit = dt * lerp(100, 150, self.anger)
         self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
 
         if math.abs(self.target - self.x) < 2 then
             self.accumulator = 0
         else
-            self.accumulator = (self.accumulator + dt) % 0.2
+            self.accumulator = (self.accumulator + dt) % lerp(0.2, 0.1, self.anger)
         end
     end
     function person:draw()
@@ -722,7 +727,10 @@ function createPerson()
         if person.target - person.x > 0 then dir = -1 end
 
         local y = terrain:worldSurface(self.x)
-        if self.accumulator > 0.125 then y = y - 4 end
+        if self.accumulator > lerp(0.125, 0.0625, self.anger) then
+            y = y - lerp(4, 1.5, self.anger)
+        end
+
         love.graphics.setCanvas(intermediateCanvas)
         love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 12)
         love.graphics.setCanvas()
