@@ -694,6 +694,7 @@ function createPerson()
     local person = {}
     person.x = love.math.random(0, world.WIDTH)
     person.target = person.x
+    person.accumulator = 0
 
     function person:update(dt)
         -- new target
@@ -709,12 +710,19 @@ function createPerson()
         end
         local limit = dt * 100
         self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
+
+        if math.abs(self.target - self.x) < 2 then
+            self.accumulator = 0
+        else
+            self.accumulator = (self.accumulator + dt) % 0.2
+        end
     end
     function person:draw()
         local dir = 1
         if person.target - person.x > 0 then dir = -1 end
 
         local y = terrain:worldSurface(self.x)
+        if self.accumulator > 0.125 then y = y - 4 end
         love.graphics.setCanvas(intermediateCanvas)
         love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 12)
         love.graphics.setCanvas()
