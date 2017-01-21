@@ -474,10 +474,22 @@ player = {
 function player:create()
     self.x = 400
     self.vel = 0
+    self.direction = 1 -- facing right
 
     -- drilling
     self.isDrilling = false
     self.drillDepth = 0
+
+    -- sprites
+    self.image = love.graphics.newImage("assets/fractor.png")
+    self.image:setFilter("nearest", "nearest")
+    self.image:setWrap("clampzero", "clampzero")
+    local imageWidth, imageHeight = self.image:getDimensions()
+    self.playerQuad = love.graphics.newQuad(
+        41, 1, -- subimage x, y
+        54, 47, -- subimage width, height
+        imageWidth, imageHeight) -- image width, height
+    self.trailerQuad = love.graphics.newQuad(2, 1, 35, 47, imageWidth, imageHeight)
 end
 
 function player:calcY()
@@ -486,43 +498,73 @@ function player:calcY()
 end
 
 function player:update(dt)
+    -- control inputs
+    local retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
+    local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
+    local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a"))
+    local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d"))
+
     -- start drilling when the player presses down
-    if love.keyboard.isDown("down") and not player.isDrilling then
+    if extendDrill and player.vel == 0 and not player.isDrilling then
         player.isDrilling = true
         player.vel = 0
     end
 
     if player.isDrilling then
         -- can only move the drill up and down while drilling
-        local extend = love.keyboard.isDown("down")
-        local retract = love.keyboard.isDown("up")
-        if extend and not retract then
+        if extendDrill and not retractDrill then
             player:extendDrill(dt)
-        elseif not extend and retract then
+        elseif not extend and retractDrill then
             player:retractDrill(dt)
         end
     else
         -- can move and ping when not drilling
         local x = 0
-        if love.keyboard.isDown("a") then x = -1 end
-        if love.keyboard.isDown("d") then x =  1 end
+        if moveLeft then
+            x = -1
+            player.direction = -1
+        end
+        if moveRight then
+            x = 1
+            player.direction = 1
+        end
         player.vel = player.vel + x * dt * 1000
         player.x = (player.x + player.vel * dt) % terrain.WIDTH
 
         player.vel = player.vel * (1 - 10 * dt)
+        if (math.abs(player.vel) < 0.05) then
+            player.vel = 0
+        end
     end
 end
 
 function player:draw()
     local y = self:calcY()
     love.graphics.setColor(255, 140, 0, 255)
-    love.graphics.rectangle("fill", self.x % terrain.WIDTH - terrain.WIDTH - 8, y, 16, 10, 0)
-    love.graphics.rectangle("fill", self.x % terrain.WIDTH - 8, y, 16, 10, 0)
+
+    local x = self.x % terrain.WIDTH
+    local wrappedX = x - terrain.WIDTH
+
+    love.graphics.rectangle("fill", x, y, 16, 10, 0)
+    love.graphics.rectangle("fill", wrappedX, y, 16, 10, 0)
+
+    love.graphics.setColor(255, 255, 255, 255)
+
+    local _, _, quadWidth, quadHeight = self.playerQuad:getViewport()
+    love.graphics.draw(self.image, self.playerQuad, x, y,
+        0, -- rotation
+        self.direction, 1, -- scale
+        (quadWidth / 2), quadHeight)
+    -- draw the wrapped version of the sprite
+    love.graphics.draw(self.image, self.playerQuad, wrappedX, y,
+        0, -- rotation
+        self.direction, 1, -- scale
+        (quadWidth / 2), quadHeight)
 
     -- draw the drill
     love.graphics.setColor(80, 80, 80, 255)
-    love.graphics.rectangle("fill", self.x % terrain.WIDTH - terrain.WIDTH - 4, y, 8, player.drillDepth, 0)
-    love.graphics.rectangle("fill", self.x % terrain.WIDTH - 4, y, 8, player.drillDepth, 0)
+    love.graphics.rectangle("fill", x, y, 8, player.drillDepth, 0)
+    love.graphics.rectangle("fill", wrappedX, y, 8, player.drillDepth, 0)
 end
 
 function player:extendDrill(dt)
