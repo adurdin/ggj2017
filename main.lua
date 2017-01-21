@@ -183,6 +183,24 @@ function love.draw()
     love.graphics.setCanvas()
     love.graphics.setShader()
     
+    love.graphics.setShader(defaultShader)
+    love.graphics.setCanvas(intermediateCanvas)
+    
+    love.graphics.setColor(255, 0, 0, 255)
+    love.graphics.rectangle("fill", 5, 5, 45, 45)
+    
+    love.graphics.setColor(0, 255, 0, 255)
+    love.graphics.rectangle("fill", 1390, 5, 45, 45)
+    
+    love.graphics.setColor(0, 0, 255, 255)
+    love.graphics.rectangle("fill", 5, 450, 45, 45)
+    
+    love.graphics.setColor(255, 255, 0, 255)
+    love.graphics.rectangle("fill", 1390, 450, 45, 45)
+    
+    love.graphics.setCanvas()
+    love.graphics.setShader()
+    
     -- final draw
     drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
     drawShader:send("cameraScale", camera.scale)

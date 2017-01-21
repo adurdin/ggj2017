@@ -27,7 +27,7 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
         finalColourPixel = COLOUR_SKY;
         terrainType = M_TERRAIN_TYPE_SKY;
     } else if (densityMapTextureCoords.y > 1.0f) {
-        finalColourPixel = COLOUR_BLACK;
+        finalColourPixel = COLOUR_DIRT;
         // terrainType = M_TERRAIN_TYPE_DIRT;
     } else {
         densityMapPixel = Texel(densityMap, densityMapTextureCoords);
