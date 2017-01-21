@@ -25,6 +25,9 @@ function love.load()
 
     -- create a raster terrain
     createTerrain(terrain)
+
+    -- create player
+    player:create()
 end
 
 function love.update(dt)
@@ -47,6 +50,13 @@ function love.update(dt)
         -- Print to console
         print("Your are pressing space")
     end
+
+    local x = 0
+    if love.keyboard.isDown("a") then x = -1 end
+    if love.keyboard.isDown("d") then x =  1 end
+    player.vel = player.vel + x * dt * 5000
+    player.x = player.x + player.vel * dt
+    player.vel = player.vel * (1 - 0.01 * dt * 1000)
 
     -- update terrain
     terrain:update()
@@ -83,6 +93,12 @@ function love.draw()
     love.graphics.draw(level_image, 0, 0)
 
     love.graphics.setShader()
+
+    -- render terrain
+    terrain:draw(0, 0)
+
+    -- render player
+    player:draw(0, 0)
 
     -- show the fps counter
     if showFPSCounter then
@@ -225,4 +241,16 @@ function terrain:draw(x, y, toCanvas)
     love.graphics.setBlendMode(unpack(prevBlendMode))
     love.graphics.setColor(unpack(prevColor))
     love.graphics.setColorMask(unpack(prevColorMask))
+end
+
+player = {}
+
+function player:create()
+    self.x = 0
+    self.vel = 0
+end
+
+function player:draw(x, y)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, 20, 50, 50, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, 20, 50, 50, 0)
 end
