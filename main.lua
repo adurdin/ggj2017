@@ -673,13 +673,13 @@ people = {
 
 function createPerson()
     local person = {}
-    person.x = love.math.random(0, terrain.WIDTH)
+    person.x = love.math.random(0, world.WIDTH)
     person.target = person.x
 
     function person:update(dt)
         -- new target
         if love.math.random() < (0.1 * dt) then
-            self.target = love.math.random(0, terrain.WIDTH)
+            self.target = love.math.random(0, world.WIDTH)
             if math.abs(self.target - player.x) > 250 then
                 self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
             elseif math.abs(self.target - player.x) > 150 then
