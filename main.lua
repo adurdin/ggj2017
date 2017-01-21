@@ -693,9 +693,12 @@ function createPerson()
     end
     function person:draw()
         love.graphics.setColor(255, 140, 0, 255)
+
         local dir = 1
         if person.target - person.x > 0 then dir = -1 end
-        love.graphics.draw(protestorSheet, protestorQuad, self.x, 195, 0, dir, 1, 8, 8)
+
+        local y = terrain:worldSurface(self.x)
+        love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 8)
     end
     return person
 end
