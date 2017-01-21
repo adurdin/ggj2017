@@ -237,7 +237,7 @@ function terrain:draw(x, y, toCanvas)
     love.graphics.setBlendMode("replace", "premultiplied")
     love.graphics.setColor(255,255,255,255)
     love.graphics.setColorMask(true, true, true, toCanvas)
-    love.graphics.draw(terrain.image, x, y)
+    love.graphics.draw(terrain.readImage, x, y)
 
     -- restore state
     love.graphics.setBlendMode(unpack(prevBlendMode))
