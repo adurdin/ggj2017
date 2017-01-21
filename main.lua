@@ -67,15 +67,11 @@ function love.update(dt)
         terrain:wakeColumn(math.floor(terrain.width / 2))
     end
 
-    local x = 0
-    if love.keyboard.isDown("a") then x = -1 end
-    if love.keyboard.isDown("d") then x =  1 end
-    player.vel = player.vel + x * dt * 5000
-    player.x = player.x + player.vel * dt
-    player.vel = player.vel * (1 - 0.01 * dt * 1000)
-
     -- update terrain
     terrain:update(dt)
+
+    -- update player
+    player:update(dt)
 end
 
 function love.keypressed(key, unicode)
@@ -414,6 +410,15 @@ end
 
 function player:calcY()
     return terrain.surface[math.floor(self.x + 25) % TERRAIN_WIDTH] - 50 + 200
+end
+
+function player:update(dt)
+    local x = 0
+    if love.keyboard.isDown("a") then x = -1 end
+    if love.keyboard.isDown("d") then x =  1 end
+    player.vel = player.vel + x * dt * 5000
+    player.x = player.x + player.vel * dt
+    player.vel = player.vel * (1 - 0.01 * dt * 1000)
 end
 
 function player:draw()
