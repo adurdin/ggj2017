@@ -1,6 +1,52 @@
 sonarVars = {}
 debugVars = {}
 
+terrain = {
+  WIDTH = 1024,
+  HEIGHT = 160,
+}
+
+world = {
+  WIDTH = 1440,
+  HEIGHT = 500,
+  TERRAIN_Y = 200,
+  CORE_Y = 400
+}
+
+screen = {
+  WIDTH = 800,
+  HEIGHT = 600
+  }
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- SPACE CONVERSIONS
+
+function texture_to_world(textureCoord)
+    return (textureCoord * vec2((world.WIDTH / terrain.WIDTH), (world.HEIGHT / terrain.HEIGHT))) + vec2(world.TERRAIN_Y, 0.0)
+end
+
+function world_to_texture(worldCoord)
+    return (worldCoord - vec2(TERRAIN_Y, 0.0)) * vec2((terrain.WIDTH / world.WIDTH), (terrain.HEIGHT / world.HEIGHT))
+end
+
+function world_to_view(worldCoord)
+    return worldCoord * vec2((view.WIDTH / world.WIDTH), (view.HEIGHT / world.HEIGHT))
+end
+
+function view_to_world(viewCoord)
+    return viewCoord * vec2((world.WIDTH / view.WIDTH), (world.HEIGHT / view.HEIGHT))
+end
+
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -182,9 +228,6 @@ end
 --
 -- TERRAIN
 
-TERRAIN_WIDTH = 1024
-TERRAIN_HEIGHT = 160
-
 -- dirt 0 is not falling; dirt 1-127 is falling with some velocity
 TERRAIN_DIRT_ALPHA_MIN = 0
 TERRAIN_DIRT_ALPHA_MAX = 127
@@ -200,8 +243,6 @@ TERRAIN_ALPHA_TO_VELOCITY = 60
 TERRAIN_GRAVITY = 16
 -- maximum super falling speed (pixels/second)
 TERRAIN_TERMINAL_VELOCITY = 10
-
-terrain = {}
 
 function generateTerrainPixel(x, y, r, g, b, a, debug)
     local noise = love.math.noise(x / terrain.width * 16, y / terrain.height * 16, 0.1) * 2
@@ -230,8 +271,8 @@ function shockwaveForce(centerX, centerY, intensity, halfIntensityDistance, x, y
 end
 
 function createTerrain(terrain)
-    terrain.width = TERRAIN_WIDTH
-    terrain.height = TERRAIN_HEIGHT
+    terrain.width = terrain.WIDTH
+    terrain.height = terrain.HEIGHT
     terrain.data = love.image.newImageData(terrain.width, terrain.height)
 
     -- create a terrain and copy it into the second data buffer
@@ -431,7 +472,7 @@ function player:create()
 end
 
 function player:calcY()
-    return terrain.surface[math.floor(self.x + 25) % TERRAIN_WIDTH] - 50 + 200
+    return terrain.surface[math.floor(self.x + 25) % terrain.WIDTH] - 50 + 200
 end
 
 function player:update(dt)
@@ -446,8 +487,8 @@ end
 function player:draw()
     local y = self:calcY()
     love.graphics.setColor(255, 140, 0, 255)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 50, 50, 0)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 50, 50, 0)
+    love.graphics.rectangle("fill", self.x % terrain.WIDTH - terrain.WIDTH, y, 50, 50, 0)
+    love.graphics.rectangle("fill", self.x % terrain.WIDTH, y, 50, 50, 0)
 end
 
 -- --------------------------------------------------------------------------------------

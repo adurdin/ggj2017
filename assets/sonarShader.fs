@@ -17,7 +17,7 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screen_coords)
 
     //TODO(Gordon): Add the camera transform parameter
     
-    /* transforms texture coordinates for density map */
+    /* transforms texture coordinates for density map */                                                               
     
     vec2 densityMapTextureCoords = (textureCoords * vec2(1.0f, 2.0f)) + vec2(0.0f, -0.5f);
     
@@ -49,7 +49,7 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screen_coords)
             if (abs(distance - positionInRadius) < 0.001f) {
                 return vec4(0.0f, 1.0f, 0.0f, 1.0f);
             } else if (distance <= positionInRadius) {
-                if (terrainType == M_TERRAIN_TYPE_GAS) {
+                if (terrainType == M_TERRAIN_TYPE_GAS || terrainType == M_TERRAIN_TYPE_VOID) {
                     return vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 } else {
                     return finalColourPixel * vec4(0.0f, abs(sin((normalizedDistance + normalizedTime) * 2 * 8 * M_PI)), 0.0f, 1.0f);
