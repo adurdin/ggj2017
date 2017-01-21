@@ -9,14 +9,12 @@ extern float maxTime;
 extern float currentTime;
 extern Image densityMap;
 
-vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screen_coords)
+vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
 {
     vec4 COLOUR_BLACK = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     vec4 COLOUR_SKY = vec4(0.0f, 0.55f, 0.99f, 1.0f);
     vec4 COLOUR_DIRT = vec4(0.48f, 0.26f, 0.09f, 1.0f);
 
-    //TODO(Gordon): Add the camera transform parameter
-    
     /* transforms texture coordinates for density map */                                                               
     
     vec2 densityMapTextureCoords = (textureCoords * vec2(1.0f, 1.25f)) + vec2(0.0f, -0.4f);

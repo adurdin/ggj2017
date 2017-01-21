@@ -17,7 +17,13 @@ world = {
 screen = {
   WIDTH = 800,
   HEIGHT = 600
-  }
+}
+
+camera = {
+    positionX = 0.0,
+    positionY = 0.0,
+    scale = 1.0
+}
 
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -70,6 +76,9 @@ function love.load()
     
     defaultShader = love.graphics.newShader("assets/defaultShader.fs")
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
+    drawShader = love.graphics.newShader("assets/drawShader.fs")
+    
+    intermediateCanvas = love.graphics.newCanvas(screen.WIDTH, screen.HEIGHT)
 
     -- load some fonts
     debugFont = love.graphics.newFont(16)
@@ -153,11 +162,13 @@ function love.draw()
     sonarShader:send("currentTime", sonarVars.currentTime)
     sonarShader:send("densityMap", terrain.image)
     love.graphics.setShader(sonarShader)
+    love.graphics.setCanvas(intermediateCanvas)
     -- Every frame:
     -- show an educational image
     love.graphics.setColor(255,255,255,255)
     love.graphics.draw(level_image, 0, 0)
 
+    love.graphics.setCanvas()
     love.graphics.setShader()
 
     -- render terrain
@@ -167,7 +178,16 @@ function love.draw()
 
     -- render player
     love.graphics.setShader(defaultShader)
+    love.graphics.setCanvas(intermediateCanvas)
     player:draw()
+    love.graphics.setCanvas()
+    love.graphics.setShader()
+    
+    -- final draw
+    drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
+    drawShader:send("cameraScale", camera.scale)
+    love.graphics.setShader(drawShader)
+    love.graphics.draw(intermediateCanvas, 0, 0)
     love.graphics.setShader()
 
     -- show the fps counter
