@@ -133,7 +133,7 @@ function love.load()
     player:create()
 
     -- people
-    for x=0,people.COUNT do
+    for x=0,(people.COUNT-1) do
         people[x] = createPerson()
     end
 end
@@ -157,7 +157,7 @@ function love.update(dt)
     player:update(dt)
 
     -- update people
-    for x=0,people.COUNT do
+    for x=0,(people.COUNT-1) do
         people[x]:update(dt)
     end
 end
@@ -241,7 +241,7 @@ function love.draw()
     -- final draw
     aspectRatioScale = screen.HEIGHT / world.HEIGHT
     
-    for x=0,people.COUNT do
+    for x=0,(people.COUNT-1) do
         people[x]:draw()
     end
     
