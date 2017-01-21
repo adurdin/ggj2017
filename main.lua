@@ -771,6 +771,11 @@ function createPerson()
                                         16, 16, 64, 64)
 
     function person:update(dt)
+        -- run away
+        local diff = player.x - self.x
+        if math.abs(diff) < 30 then
+            self.target = player.x - diff * 5
+        end
         -- new target
         if love.math.random() < (0.5 * dt) then
             self.target = love.math.random(0, world.WIDTH)
