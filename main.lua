@@ -805,14 +805,16 @@ function createPerson()
         local dir = 1
         if person.target - person.x > 0 then dir = -1 end
 
-        local y = terrain:worldSurface(self.x)
+        local y, nx, ny = terrain:worldSurface(self.x)
         if self.accumulator > lerp(0.125, 0.0625, self.anger) then
             y = y - lerp(4, 1.5, self.anger)
         end
 
+        local angle = math.atan2(nx, ny) * 0.4
+
         love.graphics.setCanvas(intermediateCanvas)
         love.graphics.setColor(255, 255, 255, 255)
-        love.graphics.draw(protestorSheet, self.quad, self.x, y, 0, dir, 1, 8, 12)
+        love.graphics.draw(protestorSheet, self.quad, self.x, y, -angle, dir, 1, 8, 12)
         love.graphics.setCanvas()
     end
     return person
