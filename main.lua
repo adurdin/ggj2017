@@ -3,13 +3,14 @@ debugVars = {}
 
 terrain = {
   WIDTH = 1024,
-  HEIGHT = 160,
+  HEIGHT = 160
 }
 
 world = {
   WIDTH = 1440,
   HEIGHT = 500,
   TERRAIN_Y = 200,
+  TERRAIN_SIZE = 200,
   CORE_Y = 400
 }
 
@@ -32,7 +33,7 @@ screen = {
 -- SPACE CONVERSIONS
 
 function texture_to_world(textureCoord)
-    return (textureCoord * vec2((world.WIDTH / terrain.WIDTH), (world.HEIGHT / terrain.HEIGHT))) + vec2(world.TERRAIN_Y, 0.0)
+    return (textureCoord * vec2((world.WIDTH / terrain.WIDTH), (world.TERRAIN_SIZE / terrain.HEIGHT))) + vec2(world.TERRAIN_Y, 0.0)
 end
 
 function world_to_texture(worldCoord)
@@ -125,7 +126,7 @@ function love.keypressed(key, unicode)
         end
     end
     
-    if love.keyboard.isDown("space") then
+    if love.keyboard.isDown("space") and not player.isDrilling then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
         sonarVars.sourcePosition = {((player.x + 24) / screenWidth), ((player:calcY() + 24) / screenHeight)}
@@ -464,31 +465,76 @@ end
 --
 -- PLAYER
 
-player = {}
+player = {
+    DRILL_MAX_DEPTH = 256,
+    DRILL_EXTEND_SPEED = 64, -- frackulons/second
+    DRILL_RETRACT_SPEED = 128, -- frackulons/second
+}
 
 function player:create()
-    self.x = 0
+    self.x = 400
     self.vel = 0
+
+    -- drilling
+    self.isDrilling = false
+    self.drillDepth = 0
 end
 
 function player:calcY()
-    return terrain.surface[math.floor(self.x + 25) % terrain.WIDTH] - 50 + 200
+    local y = terrain.surface[math.floor(self.x * terrain.WIDTH / love.graphics.getWidth()) % terrain.WIDTH]
+    return y / terrain.HEIGHT * love.graphics.getHeight() / 2 + 160
 end
 
 function player:update(dt)
-    local x = 0
-    if love.keyboard.isDown("a") then x = -1 end
-    if love.keyboard.isDown("d") then x =  1 end
-    player.vel = player.vel + x * dt * 5000
-    player.x = player.x + player.vel * dt
-    player.vel = player.vel * (1 - 0.01 * dt * 1000)
+    -- start drilling when the player presses down
+    if love.keyboard.isDown("down") and not player.isDrilling then
+        player.isDrilling = true
+        player.vel = 0
+    end
+
+    if player.isDrilling then
+        -- can only move the drill up and down while drilling
+        local extend = love.keyboard.isDown("down")
+        local retract = love.keyboard.isDown("up")
+        if extend and not retract then
+            player:extendDrill(dt)
+        elseif not extend and retract then
+            player:retractDrill(dt)
+        end
+    else
+        -- can move and ping when not drilling
+        local x = 0
+        if love.keyboard.isDown("a") then x = -1 end
+        if love.keyboard.isDown("d") then x =  1 end
+        player.vel = player.vel + x * dt * 1000
+        player.x = (player.x + player.vel * dt) % terrain.WIDTH
+
+        player.vel = player.vel * (1 - 10 * dt)
+    end
 end
 
 function player:draw()
     local y = self:calcY()
     love.graphics.setColor(255, 140, 0, 255)
-    love.graphics.rectangle("fill", self.x % terrain.WIDTH - terrain.WIDTH, y, 50, 50, 0)
-    love.graphics.rectangle("fill", self.x % terrain.WIDTH, y, 50, 50, 0)
+    love.graphics.rectangle("fill", self.x % terrain.WIDTH - terrain.WIDTH - 8, y, 16, 10, 0)
+    love.graphics.rectangle("fill", self.x % terrain.WIDTH - 8, y, 16, 10, 0)
+
+    -- draw the drill
+    love.graphics.setColor(80, 80, 80, 255)
+    love.graphics.rectangle("fill", self.x % terrain.WIDTH - terrain.WIDTH - 4, y, 8, player.drillDepth, 0)
+    love.graphics.rectangle("fill", self.x % terrain.WIDTH - 4, y, 8, player.drillDepth, 0)
+end
+
+function player:extendDrill(dt)
+    player.isDrilling = true
+    player.drillDepth = math.min(player.drillDepth + (player.DRILL_EXTEND_SPEED * dt), player.DRILL_MAX_DEPTH)
+end
+
+function player:retractDrill(dt)
+    player.drillDepth = math.max(0, player.drillDepth - (player.DRILL_RETRACT_SPEED * dt))
+    if player.drillDepth == 0 then
+        player.isDrilling = false
+    end
 end
 
 -- --------------------------------------------------------------------------------------
