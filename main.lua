@@ -578,7 +578,10 @@ function player:create()
         41, 1, -- subimage x, y
         54, 47, -- subimage width, height
         imageWidth, imageHeight) -- image width, height
+    __, __, self.playerQuadWidth, self.playerQuadHeight = self.playerQuad:getViewport()
+
     self.trailerQuad = love.graphics.newQuad(2, 1, 35, 47, imageWidth, imageHeight)
+    __, __, self.trailerQuadWidth, self.trailerQuadHeight = self.trailerQuad:getViewport()
 end
 
 function player:update(dt)
@@ -589,56 +592,67 @@ function player:update(dt)
     local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d"))
 
     -- start drilling when the player presses down
-    if extendDrill and player.vel == 0 and not player.isDrilling then
-        player.isDrilling = true
-        player.vel = 0
+    if extendDrill and self.vel == 0 and not self.isDrilling then
+        self.isDrilling = true
+        self.vel = 0
     end
 
-    if player.isDrilling then
+    if self.isDrilling then
         -- can only move the drill up and down while drilling
         if extendDrill and not retractDrill then
-            player:extendDrill(dt)
+            self:extendDrill(dt)
         elseif not extend and retractDrill then
-            player:retractDrill(dt)
+            self:retractDrill(dt)
         end
     else
         -- can move and ping when not drilling
         local x = 0
         if moveLeft then
             x = -1
-            player.direction = -1
+            self.direction = -1
         end
         if moveRight then
             x = 1
-            player.direction = 1
+            self.direction = 1
         end
-        player.vel = player.vel + x * dt * 1000
-        player.x = (player.x + player.vel * dt) % world.WIDTH
+        self.vel = self.vel + x * dt * 1000
+        self.x = (self.x + self.vel * dt) % world.WIDTH
 
-        player.vel = player.vel * (1 - 10 * dt)
-        if (math.abs(player.vel) < 0.05) then
-            player.vel = 0
+        self.vel = self.vel * (1 - 10 * dt)
+        if (math.abs(self.vel) < 0.05) then
+            self.vel = 0
         end
     end
 
     -- set our height to the surface height
     self.y = terrain:worldSurface(self.x)
+
+    -- put the trailer behind us
+    self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
+    self.trailerY = terrain:worldSurface(self.trailerX)
 end
 
 function player:draw()
     love.graphics.setColor(255, 255, 255, 255)
 
+    -- draw the fractor
     local _, _, quadWidth, quadHeight = self.playerQuad:getViewport()
     love.graphics.draw(self.image, self.playerQuad, self.x, self.y,
         0, -- rotation
         self.direction, 1, -- scale
-        (quadWidth / 2), quadHeight)
+        (self.playerQuadWidth / 2), self.playerQuadHeight)
     -- FIXME
     -- -- draw the wrapped version of the sprite
     -- love.graphics.draw(self.image, self.playerQuad, wrappedX, y,
     --     0, -- rotation
     --     self.direction, 1, -- scale
     --     (quadWidth / 2), quadHeight)
+
+    -- draw the trailer
+    love.graphics.draw(self.image, self.trailerQuad, self.trailerX, self.trailerY,
+        0, -- rotation
+        self.direction, 1, -- scale
+        self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
 
     -- draw the drill
     love.graphics.setColor(80, 80, 80, 255)
