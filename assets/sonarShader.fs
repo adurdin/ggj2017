@@ -35,7 +35,7 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screen_coords)
         densityMapPixel = Texel(densityMap, densityMapTextureCoords);
         terrainType = densityMapPixel.a * 255.0f;
         densityMapPixel.a = 1.0f;
-        finalColourPixel = COLOUR_DIRT;
+        finalColourPixel = vec4(densityMapPixel.r, densityMapPixel.g, densityMapPixel.b, 1.0f);
     }
     
     float normalizedTime = (currentTime / maxTime);

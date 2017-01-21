@@ -144,7 +144,9 @@ function generateTerrainPixel(x, y, r, g, b, a, debug)
     local isDirt = (noise > 0.75)
     -- rgb channels can be used for color data
     -- alpha channel is terrain data and should not be rendered
-    if isDirt then
+    if y < 5 then
+      return 5, 162, 9, TERRAIN_DIRT_ALPHA_MIN
+    elseif isDirt then
         return 123, 69, 23, TERRAIN_DIRT_ALPHA_MIN
     else
         if debug then
