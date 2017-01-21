@@ -79,7 +79,7 @@ function love.keypressed(key, unicode)
         end
     end
     
-    if love.keyboard.isDown("space") then
+    if love.keyboard.isDown("space") and not player.isDrilling then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
         sonarVars.sourcePosition = {((player.x + 24) / screenWidth), ((player:calcY() + 24) / screenHeight)}
@@ -423,11 +423,19 @@ end
 --
 -- PLAYER
 
-player = {}
+player = {
+    DRILL_MAX_DEPTH = 256,
+    DRILL_EXTEND_SPEED = 64, -- frackulons/second
+    DRILL_RETRACT_SPEED = 128, -- frackulons/second
+}
 
 function player:create()
     self.x = 0
     self.vel = 0
+
+    -- drilling
+    self.isDrilling = false
+    self.drillDepth = 0
 end
 
 function player:calcY()
@@ -435,12 +443,29 @@ function player:calcY()
 end
 
 function player:update(dt)
-    local x = 0
-    if love.keyboard.isDown("a") then x = -1 end
-    if love.keyboard.isDown("d") then x =  1 end
-    player.vel = player.vel + x * dt * 5000
-    player.x = player.x + player.vel * dt
-    player.vel = player.vel * (1 - 0.01 * dt * 1000)
+    -- start drilling when the player presses down
+    if love.keyboard.isDown("down") and not player.isDrilling then
+        player.isDrilling = true
+    end
+
+    if player.isDrilling then
+        -- can only move the drill up and down while drilling
+        local extend = love.keyboard.isDown("down")
+        local retract = love.keyboard.isDown("up")
+        if extend and not retract then
+            player:extendDrill(dt)
+        elseif not extend and retract then
+            player:retractDrill(dt)
+        end
+    else
+        -- can move and ping when not drilling
+        local x = 0
+        if love.keyboard.isDown("a") then x = -1 end
+        if love.keyboard.isDown("d") then x =  1 end
+        player.vel = player.vel + x * dt * 5000
+        player.x = player.x + player.vel * dt
+        player.vel = player.vel * (1 - 0.01 * dt * 1000)
+    end
 end
 
 function player:draw()
@@ -448,6 +473,23 @@ function player:draw()
     love.graphics.setColor(255, 140, 0, 255)
     love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 50, 50, 0)
     love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 50, 50, 0)
+
+    -- draw the drill
+    love.graphics.setColor(80, 80, 80, 255)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 8, player.drillDepth, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 8, player.drillDepth, 0)
+end
+
+function player:extendDrill(dt)
+    player.isDrilling = true
+    player.drillDepth = math.min(player.drillDepth + (player.DRILL_EXTEND_SPEED * dt), player.DRILL_MAX_DEPTH)
+end
+
+function player:retractDrill(dt)
+    player.drillDepth = math.max(0, player.drillDepth - (player.DRILL_RETRACT_SPEED * dt))
+    if player.drillDepth == 0 then
+        player.isDrilling = false
+    end
 end
 
 -- --------------------------------------------------------------------------------------
