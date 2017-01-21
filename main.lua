@@ -465,7 +465,8 @@ function player:update(dt)
         if love.keyboard.isDown("a") then x = -1 end
         if love.keyboard.isDown("d") then x =  1 end
         player.vel = player.vel + x * dt * 1000
-        player.x = player.x + player.vel * dt
+        player.x = (player.x + player.vel * dt) % TERRAIN_WIDTH
+
         player.vel = player.vel * (1 - 10 * dt)
     end
 end
@@ -473,13 +474,13 @@ end
 function player:draw()
     local y = self:calcY()
     love.graphics.setColor(255, 140, 0, 255)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 5, 5, 0)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 5, 5, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH - 8, y, 16, 10, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - 8, y, 16, 10, 0)
 
     -- draw the drill
     love.graphics.setColor(80, 80, 80, 255)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 8, player.drillDepth, 0)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 8, player.drillDepth, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH - 4, y, 8, player.drillDepth, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - 4, y, 8, player.drillDepth, 0)
 end
 
 function player:extendDrill(dt)
