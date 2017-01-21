@@ -676,7 +676,7 @@ end
 -- PEOPLE
 
 people = {
-    COUNT = 10
+    COUNT = 20
 }
 
 function createPerson()
@@ -688,10 +688,16 @@ function createPerson()
         -- new target
         if love.math.random() < (0.1 * dt) then
             self.target = love.math.random(0, terrain.WIDTH)
+            if math.abs(self.target - player.x) > 250 then
+                self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
+            elseif math.abs(self.target - player.x) > 150 then
+                self.target = self.target + (player.x - self.target) * love.math.random(0.25, 0.85)
+            else
+                self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
+            end
         end
         local limit = dt * 100
         self.x = self.x + clamp(-limit, self.target - self.x, limit)
-        --self.x = (self.x + dt * love.math.random(-125, 125)) % terrain.WIDTH
     end
     function person:draw()
         love.graphics.setColor(255, 140, 0, 255)
