@@ -24,6 +24,8 @@ camera = {
     scale = 1.0
 }
 
+frameCounter = 0
+
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -39,6 +41,10 @@ camera = {
 
 function clamp(min, val, max)
     return math.max(min, math.min(val, max))
+end
+
+function lerp(v1, v2, t)
+    return v1 + (v2 - v1) * t
 end
 
 -- --------------------------------------------------------------------------------------
@@ -102,8 +108,8 @@ function love.load()
     -- load an image
     educational_image = love.graphics.newImage("assets/education.jpg")
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
+
     protestorSheet = love.graphics.newImage("assets/protestors.png")
-    protestorQuad = love.graphics.newQuad(0 % 4, 0 / 4, 16, 16, 64, 64)
 
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
     drawShader = love.graphics.newShader("assets/drawShader.fs")
@@ -590,6 +596,7 @@ function player:create()
     -- drilling
     self.isDrilling = false
     self.drillDepth = 0
+    self.drillDirection = 1
 
     -- sprites
     self.image = love.graphics.newImage("assets/fractor.png")
@@ -604,9 +611,21 @@ function player:create()
 
     self.trailerQuad = love.graphics.newQuad(2, 1, 35, 47, imageWidth, imageHeight)
     __, __, self.trailerQuadWidth, self.trailerQuadHeight = self.trailerQuad:getViewport()
+
+    -- drill sprites
+    self.drillImage = love.graphics.newImage("assets/drill.png")
+    self.image:setFilter("nearest", "nearest")
+    self.image:setWrap("clampzero", "clamp")
+    local imageWidth, imageHeight = self.drillImage:getDimensions()
+    self.drillShaftQuad = love.graphics.newQuad(6, 0, 3, 16, imageWidth, imageHeight)
+    __, __, self.drillShaftQuadWidth, self.drillShaftQuadHeight = self.drillShaftQuad:getViewport()
+    self.drillBitQuad = love.graphics.newQuad(20, 0, 7, 7, imageWidth, imageHeight)
+    __, __, self.drillBitQuadWidth, self.drillBitQuadHeight = self.drillBitQuad:getViewport()
 end
 
 function player:update(dt)
+    frameCounter = frameCounter + 1
+
     -- control inputs
     local retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
@@ -629,20 +648,32 @@ function player:update(dt)
     else
         -- can move and ping when not drilling
         local x = 0
+        local newDirection = self.direction
+        local directionChanged = false
         if moveLeft then
             x = -1
-            self.direction = -1
+            newDirection = -1
         end
         if moveRight then
             x = 1
-            self.direction = 1
+            newDirection = 1
         end
+        if newDirection ~= self.direction then
+            directionChanged = true
+            self.direction = newDirection
+        end
+
+        -- move the player
         self.vel = self.vel + x * dt * 1000
         self.x = (self.x + self.vel * dt) % world.WIDTH
-
         self.vel = self.vel * (1 - 10 * dt)
         if (math.abs(self.vel) < 0.05) then
             self.vel = 0
+        end
+
+        -- offset a bit when changing direction so it looks less weird
+        if directionChanged then
+            self.x = (self.x + self.direction * self.playerQuadWidth * 0.5) % world.WIDTH
         end
     end
 
@@ -652,35 +683,52 @@ function player:update(dt)
     -- put the trailer behind us
     self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
     self.trailerY = terrain:worldSurface(self.trailerX)
+
+    -- put the drill in the trailer
+    self.drillX = (self.trailerX - self.direction * math.floor(self.trailerQuadWidth / 2)) % world.WIDTH
+    self.drillY = terrain:worldSurface(self.drillX)
 end
 
 function player:draw()
     love.graphics.setColor(255, 255, 255, 255)
 
-    -- draw the fractor
-    local _, _, quadWidth, quadHeight = self.playerQuad:getViewport()
-    love.graphics.draw(self.image, self.playerQuad, self.x, self.y,
-        0, -- rotation
-        self.direction, 1, -- scale
-        (self.playerQuadWidth / 2), self.playerQuadHeight)
-    -- FIXME
-    -- -- draw the wrapped version of the sprite
-    -- love.graphics.draw(self.image, self.playerQuad, wrappedX, y,
-    --     0, -- rotation
-    --     self.direction, 1, -- scale
-    --     (quadWidth / 2), quadHeight)
+    -- draw the fractor (three copies because of world wrapping)
+    local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
+    for i=1,3 do
+        love.graphics.draw(self.image, self.playerQuad, xs[i], self.y,
+            0, -- rotation
+            self.direction, 1, -- scale
+            (self.playerQuadWidth / 2), self.playerQuadHeight)
+    end
 
-    -- draw the trailer
-    love.graphics.draw(self.image, self.trailerQuad, self.trailerX, self.trailerY,
-        0, -- rotation
-        self.direction, 1, -- scale
-        self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
+    -- draw the trailer (three copies because of world wrapping)
+    local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
+    for i=1,3 do
+        love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY,
+            0, -- rotation
+            self.direction, 1, -- scale
+            self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
+    end
 
     -- draw the drill
-    love.graphics.setColor(80, 80, 80, 255)
-    love.graphics.rectangle("fill", self.x, self.y, 8, player.drillDepth, 0)
-    -- FIXME
-    -- love.graphics.rectangle("fill", wrappedX, y, 8, player.drillDepth, 0)
+
+    if self.drillDepth > 0 then
+        if frameCounter % 5 == 0 then
+            if self.drillDirection == 1 then
+                self.drillDirection = -1
+            else
+                self.drillDirection = 1
+            end
+        end
+        love.graphics.draw(self.drillImage, self.drillShaftQuad, self.drillX, self.drillY,
+            0, -- rotation
+            self.drillDirection, self.drillDepth / self.drillShaftQuadHeight, -- scale
+            (self.drillShaftQuadWidth / 2), 0)
+        love.graphics.draw(self.drillImage, self.drillBitQuad, self.drillX, self.drillY + self.drillDepth,
+            0, -- rotation
+            self.drillDirection, 1, -- scale
+            (self.drillBitQuadWidth / 2), 0)
+    end
 end
 
 function player:extendDrill(dt)
@@ -716,10 +764,15 @@ function createPerson()
     local person = {}
     person.x = love.math.random(0, world.WIDTH)
     person.target = person.x
+    person.anger = love.math.random(0, 1)
+    person.accumulator = 0
+    person.quad = love.graphics.newQuad(love.math.random(0, 3) * 16,
+                                        love.math.random(0, 3) * 16,
+                                        16, 16, 64, 64)
 
     function person:update(dt)
         -- new target
-        if love.math.random() < (0.1 * dt) then
+        if love.math.random() < (0.5 * dt) then
             self.target = love.math.random(0, world.WIDTH)
             if math.abs(self.target - player.x) > 250 then
                 self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
@@ -729,16 +782,27 @@ function createPerson()
                 self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
             end
         end
-        local limit = dt * 100
+        local limit = dt * lerp(100, 150, self.anger)
         self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
+
+        if math.abs(self.target - self.x) < 2 then
+            self.accumulator = 0
+        else
+            self.accumulator = (self.accumulator + dt) % lerp(0.2, 0.1, self.anger)
+        end
     end
     function person:draw()
         local dir = 1
         if person.target - person.x > 0 then dir = -1 end
 
         local y = terrain:worldSurface(self.x)
+        if self.accumulator > lerp(0.125, 0.0625, self.anger) then
+            y = y - lerp(4, 1.5, self.anger)
+        end
+
         love.graphics.setCanvas(intermediateCanvas)
-        love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 12)
+        love.graphics.setColor(255, 255, 255, 255)
+        love.graphics.draw(protestorSheet, self.quad, self.x, y, 0, dir, 1, 8, 12)
         love.graphics.setCanvas()
     end
     return person
