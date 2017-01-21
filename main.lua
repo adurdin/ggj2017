@@ -110,7 +110,7 @@ function love.load()
     player:create()
 
     -- people
-    for x=0,100 do
+    for x=0,people.COUNT do
         people[x] = createPerson()
     end
 end
@@ -132,6 +132,11 @@ function love.update(dt)
 
     -- update player
     player:update(dt)
+
+    -- update people
+    for x=0,people.COUNT do
+        people[x]:update(dt)
+    end
 end
 
 function love.keypressed(key, unicode)
@@ -226,7 +231,7 @@ function love.draw()
     love.graphics.draw(intermediateCanvas, 0, 0)
     love.graphics.setShader()
 
-    for x=0,100 do
+    for x=0,people.COUNT do
         people[x]:draw()
     end
 
@@ -653,11 +658,28 @@ end
 --
 -- PEOPLE
 
-people = {}
+people = {
+    COUNT = 10
+}
+
+function clamp(min, val, max)
+    return math.max(min, math.min(val, max))
+end
 
 function createPerson()
     local person = {}
     person.x = love.math.random(0, terrain.WIDTH)
+    person.target = person.x
+
+    function person:update(dt)
+        -- new target
+        if love.math.random() < (0.1 * dt) then
+            self.target = love.math.random(0, terrain.WIDTH)
+        end
+        local limit = dt * 100
+        self.x = self.x + clamp(-limit, self.target - self.x, limit)
+        --self.x = (self.x + dt * love.math.random(-125, 125)) % terrain.WIDTH
+    end
     function person:draw()
         love.graphics.setColor(255, 140, 0, 255)
         love.graphics.rectangle("fill", self.x, 100, 8, 18, 0)
