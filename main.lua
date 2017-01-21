@@ -97,7 +97,7 @@ function love.load()
     showFPSCounter = true
 
     -- create a raster terrain
-    createTerrain(terrain)
+    terrain:create()
 
     -- create player
     player:create()
@@ -294,30 +294,28 @@ function shockwaveForce(centerX, centerY, intensity, halfIntensityDistance, x, y
     return intensity * math.exp(-exponent)
 end
 
-function createTerrain(terrain)
-    terrain.width = terrain.WIDTH
-    terrain.height = terrain.HEIGHT
-    terrain.data = love.image.newImageData(terrain.width, terrain.height)
+function terrain:create()
+    self.width = self.WIDTH
+    self.height = self.HEIGHT
+    self.data = love.image.newImageData(self.width, self.height)
 
     -- create a terrain and copy it into the second data buffer
-    terrain.data:mapPixel(generateTerrainPixel)
-    terrain.image = love.graphics.newImage(terrain.data)
+    self.data:mapPixel(generateTerrainPixel)
+    self.image = love.graphics.newImage(self.data)
 
     -- surface is the y coordinate of the topmost piece of dirt in the terrain
-    terrain.surface = {}
-    for x=0,(terrain.width-1) do
-        terrain.surface[x] = 0
+    self.surface = {}
+    for x=0,(self.width-1) do
+        self.surface[x] = 0
     end
 
     -- an awake column is one where pixels might fall on an update
     -- for now, start with all columns awake
     -- we'll later only wake them with a shockwave
-    terrain.awakeColumns={}
-    for x=0,(terrain.width-1) do
-        terrain.awakeColumns[x] = false
+    self.awakeColumns={}
+    for x=0,(self.width-1) do
+        self.awakeColumns[x] = false
     end
-
-    return terrain
 end
 
 function terrain:update(dt)
