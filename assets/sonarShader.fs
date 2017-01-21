@@ -8,6 +8,7 @@ extern float radius;
 extern float maxTime;
 extern float currentTime;
 extern Image densityMap;
+extern float WORLD_WIDTH;
 extern float WORLD_HEIGHT;
 extern float WORLD_TERRAIN_Y;
 extern float WORLD_TERRAIN_SIZE;
@@ -35,20 +36,18 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     
     vec2 terrainCoords = world_to_terrain(textureCoords);
     
-    vec2 densityMapTextureCoords = terrainCoords;
-    
     vec4 densityMapPixel = COLOUR_BLACK;
     vec4 finalColourPixel = COLOUR_BLACK;
     float terrainType = 0;
     
-    if (densityMapTextureCoords.y < 0.0f) {
+    if (terrainCoords.y < 0.0f) {
         finalColourPixel = COLOUR_SKY;
         terrainType = M_TERRAIN_TYPE_SKY;
-    } else if (densityMapTextureCoords.y > 1.0f) {
+    } else if (terrainCoords.y > 1.0f) {
         finalColourPixel = COLOUR_DIRT;
         // terrainType = M_TERRAIN_TYPE_DIRT;
     } else {
-        densityMapPixel = Texel(densityMap, densityMapTextureCoords);
+        densityMapPixel = Texel(densityMap, terrainCoords);
         terrainType = densityMapPixel.a * 255.0f;
         if (terrainType == M_TERRAIN_TYPE_GAS || terrainType == M_TERRAIN_TYPE_VOID) {
             if (debugModeEnabled) {
@@ -64,7 +63,9 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     float normalizedTime = (currentTime / maxTime);
     float positionInRadius = (1.0f - normalizedTime) * radius;
     
-    float distance = sqrt(pow(abs(sourcePosition.x - textureCoords.x), 2) + pow(abs(sourcePosition.y - textureCoords.y), 2));
+    float aspectRation = WORLD_WIDTH / WORLD_HEIGHT;
+    
+    float distance = sqrt(pow(abs(sourcePosition.x - textureCoords.x) * aspectRation, 2) + pow(abs(sourcePosition.y - textureCoords.y), 2));
     float normalizedDistance = distance / radius;
     
     if (terrainType != M_TERRAIN_TYPE_SKY) {
@@ -75,7 +76,8 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
                 if (terrainType == M_TERRAIN_TYPE_GAS || terrainType == M_TERRAIN_TYPE_VOID) {
                     return vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 } else {
-                    return finalColourPixel * vec4(0.0f, abs(sin((normalizedDistance + normalizedTime) * 2 * 8 * M_PI)), 0.0f, 1.0f);
+                    float ripple = abs(sin((normalizedDistance + normalizedTime) * 2 * 8 * M_PI));
+                    return finalColourPixel * vec4(0.0f, ripple, 0.0f, 1.0f);
                 }
             } else {
                 return finalColourPixel;
