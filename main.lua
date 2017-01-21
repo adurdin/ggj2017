@@ -24,6 +24,8 @@ camera = {
     scale = 1.0
 }
 
+frameCounter = 0
+
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -572,6 +574,7 @@ function player:create()
     -- drilling
     self.isDrilling = false
     self.drillDepth = 0
+    self.drillDirection = 1
 
     -- sprites
     self.image = love.graphics.newImage("assets/fractor.png")
@@ -586,9 +589,21 @@ function player:create()
 
     self.trailerQuad = love.graphics.newQuad(2, 1, 35, 47, imageWidth, imageHeight)
     __, __, self.trailerQuadWidth, self.trailerQuadHeight = self.trailerQuad:getViewport()
+
+    -- drill sprites
+    self.drillImage = love.graphics.newImage("assets/drill.png")
+    self.image:setFilter("nearest", "nearest")
+    self.image:setWrap("clampzero", "clamp")
+    local imageWidth, imageHeight = self.drillImage:getDimensions()
+    self.drillShaftQuad = love.graphics.newQuad(6, 0, 3, 16, imageWidth, imageHeight)
+    __, __, self.drillShaftQuadWidth, self.drillShaftQuadHeight = self.drillShaftQuad:getViewport()
+    self.drillBitQuad = love.graphics.newQuad(20, 0, 7, 7, imageWidth, imageHeight)
+    __, __, self.drillBitQuadWidth, self.drillBitQuadHeight = self.drillBitQuad:getViewport()
 end
 
 function player:update(dt)
+    frameCounter = frameCounter + 1
+
     -- control inputs
     local retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
@@ -646,6 +661,10 @@ function player:update(dt)
     -- put the trailer behind us
     self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
     self.trailerY = terrain:worldSurface(self.trailerX)
+
+    -- put the drill in the trailer
+    self.drillX = (self.trailerX - self.direction * math.floor(self.trailerQuadWidth / 2)) % world.WIDTH
+    self.drillY = terrain:worldSurface(self.drillX)
 end
 
 function player:draw()
@@ -670,10 +689,24 @@ function player:draw()
     end
 
     -- draw the drill
-    love.graphics.setColor(80, 80, 80, 255)
-    love.graphics.rectangle("fill", self.x, self.y, 8, player.drillDepth, 0)
-    -- FIXME
-    -- love.graphics.rectangle("fill", wrappedX, y, 8, player.drillDepth, 0)
+
+    if self.drillDepth > 0 then
+        if frameCounter % 5 == 0 then
+            if self.drillDirection == 1 then
+                self.drillDirection = -1
+            else
+                self.drillDirection = 1
+            end
+        end
+        love.graphics.draw(self.drillImage, self.drillShaftQuad, self.drillX, self.drillY,
+            0, -- rotation
+            self.drillDirection, self.drillDepth / self.drillShaftQuadHeight, -- scale
+            (self.drillShaftQuadWidth / 2), 0)
+        love.graphics.draw(self.drillImage, self.drillBitQuad, self.drillX, self.drillY + self.drillDepth,
+            0, -- rotation
+            self.drillDirection, 1, -- scale
+            (self.drillBitQuadWidth / 2), 0)
+    end
 end
 
 function player:extendDrill(dt)
