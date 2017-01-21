@@ -430,7 +430,7 @@ player = {
 }
 
 function player:create()
-    self.x = 0
+    self.x = 400
     self.vel = 0
 
     -- drilling
