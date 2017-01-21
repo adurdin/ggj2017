@@ -8,6 +8,10 @@ extern float radius;
 extern float maxTime;
 extern float currentTime;
 extern Image densityMap;
+extern float WORLD_HEIGHT;
+extern float WORLD_TERRAIN_Y;
+extern float WORLD_TERRAIN_SIZE;
+extern float SCREEN_HEIGHT;
 
 vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
 {
@@ -16,8 +20,8 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     vec4 COLOUR_DIRT = vec4(0.48f, 0.26f, 0.09f, 1.0f);
 
     /* transforms texture coordinates for density map */                                                               
-    
-    vec2 densityMapTextureCoords = (textureCoords * vec2(1.0f, 1.25f)) + vec2(0.0f, -0.4f);
+    vec2 densityMapTextureCoords = textureCoords * vec2(1.0f, SCREEN_HEIGHT / WORLD_TERRAIN_SIZE)
+        - vec2(0.0f, WORLD_TERRAIN_Y / WORLD_HEIGHT * SCREEN_HEIGHT / WORLD_TERRAIN_SIZE);
     
     vec4 densityMapPixel = COLOUR_BLACK;
     vec4 finalColourPixel = COLOUR_BLACK;

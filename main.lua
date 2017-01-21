@@ -2,16 +2,15 @@ sonarVars = {}
 debugVars = {}
 
 terrain = {
-  WIDTH = 1024,
-  HEIGHT = 160
+    WIDTH = 1024,
+    HEIGHT = 160
 }
 
 world = {
-  WIDTH = 1440,
-  HEIGHT = 500,
-  TERRAIN_Y = 200,
-  TERRAIN_SIZE = 200,
-  CORE_Y = 400
+    WIDTH = 1440,
+    HEIGHT = 500,
+    TERRAIN_Y = 200,
+    TERRAIN_SIZE = 200,
 }
 
 screen = {
@@ -38,20 +37,28 @@ camera = {
 --
 -- SPACE CONVERSIONS
 
-function texture_to_world(textureCoord)
-    return (textureCoord * vec2((world.WIDTH / terrain.WIDTH), (world.TERRAIN_SIZE / terrain.HEIGHT))) + vec2(world.TERRAIN_Y, 0.0)
+function terrain_to_world(x, y)
+    return
+        (x * (world.WIDTH / terrain.WIDTH)),
+        (y * (world.TERRAIN_SIZE / terrain.HEIGHT) + world.TERRAIN_Y)
 end
 
-function world_to_texture(worldCoord)
-    return (worldCoord - vec2(TERRAIN_Y, 0.0)) * vec2((terrain.WIDTH / world.WIDTH), (terrain.HEIGHT / world.HEIGHT))
+function world_to_terrain(x, y)
+    return
+        (x * (terrain.WIDTH / world.WIDTH)),
+        ((y - TERRAIN_Y) * (terrain.HEIGHT / world.HEIGHT))
 end
 
-function world_to_view(worldCoord)
-    return worldCoord * vec2((view.WIDTH / world.WIDTH), (view.HEIGHT / world.HEIGHT))
+function world_to_view(x, y)
+    return
+        (x * (screen.WIDTH / world.WIDTH)),
+        (y * (screen.HEIGHT / world.HEIGHT))
 end
 
-function view_to_world(viewCoord)
-    return viewCoord * vec2((world.WIDTH / view.WIDTH), (world.HEIGHT / view.HEIGHT))
+function view_to_world(x, y)
+    return
+        (x * (world.WIDTH / screen.WIDTH)),
+        (y * (world.HEIGHT / screen.HEIGHT))
 end
 
 -- --------------------------------------------------------------------------------------
@@ -97,10 +104,15 @@ function love.load()
     showFPSCounter = true
 
     -- create a raster terrain
-    createTerrain(terrain)
+    terrain:create()
 
     -- create player
     player:create()
+
+    -- people
+    for x=0,100 do
+        people[x] = createPerson()
+    end
 end
 
 function love.update(dt)
@@ -161,6 +173,11 @@ function love.draw()
     sonarShader:send("maxTime", sonarVars.maxTime)
     sonarShader:send("currentTime", sonarVars.currentTime)
     sonarShader:send("densityMap", terrain.image)
+    sonarShader:send("WORLD_HEIGHT", world.HEIGHT)
+    sonarShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
+    sonarShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
+    sonarShader:send("SCREEN_HEIGHT", screen.HEIGHT)
+
     love.graphics.setShader(sonarShader)
     love.graphics.setCanvas(intermediateCanvas)
     -- Every frame:
@@ -207,6 +224,10 @@ function love.draw()
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0)
     love.graphics.setShader()
+
+    for x=0,100 do
+        people[x]:draw()
+    end
 
     -- show the fps counter
     if showFPSCounter then
@@ -312,30 +333,28 @@ function shockwaveForce(centerX, centerY, intensity, halfIntensityDistance, x, y
     return intensity * math.exp(-exponent)
 end
 
-function createTerrain(terrain)
-    terrain.width = terrain.WIDTH
-    terrain.height = terrain.HEIGHT
-    terrain.data = love.image.newImageData(terrain.width, terrain.height)
+function terrain:create()
+    self.width = self.WIDTH
+    self.height = self.HEIGHT
+    self.data = love.image.newImageData(self.width, self.height)
 
     -- create a terrain and copy it into the second data buffer
-    terrain.data:mapPixel(generateTerrainPixel)
-    terrain.image = love.graphics.newImage(terrain.data)
+    self.data:mapPixel(generateTerrainPixel)
+    self.image = love.graphics.newImage(self.data)
 
     -- surface is the y coordinate of the topmost piece of dirt in the terrain
-    terrain.surface = {}
-    for x=0,(terrain.width-1) do
-        terrain.surface[x] = 0
+    self.surface = {}
+    for x=0,(self.width-1) do
+        self.surface[x] = 0
     end
 
     -- an awake column is one where pixels might fall on an update
     -- for now, start with all columns awake
     -- we'll later only wake them with a shockwave
-    terrain.awakeColumns={}
-    for x=0,(terrain.width-1) do
-        terrain.awakeColumns[x] = false
+    self.awakeColumns={}
+    for x=0,(self.width-1) do
+        self.awakeColumns[x] = false
     end
-
-    return terrain
 end
 
 function terrain:update(dt)
@@ -513,7 +532,7 @@ player = {
 }
 
 function player:create()
-    self.x = 400
+    self.x, self.y = terrain_to_world(0, 0)
     self.vel = 0
     self.direction = 1 -- facing right
 
@@ -618,6 +637,31 @@ function player:retractDrill(dt)
     if player.drillDepth == 0 then
         player.isDrilling = false
     end
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- PEOPLE
+
+people = {}
+
+function createPerson()
+    local person = {}
+    person.x = love.math.random(0, terrain.WIDTH)
+    function person:draw()
+        love.graphics.setColor(255, 140, 0, 255)
+        love.graphics.rectangle("fill", self.x, 100, 8, 18, 0)
+    end
+    return person
 end
 
 -- --------------------------------------------------------------------------------------
