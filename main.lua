@@ -439,7 +439,7 @@ function player:create()
 end
 
 function player:calcY()
-    return terrain.surface[math.floor(self.x + 25) % TERRAIN_WIDTH] - 50 + 200
+    return terrain.surface[math.floor(self.x * TERRAIN_WIDTH / love.graphics.getWidth()) % TERRAIN_WIDTH] + 160
 end
 
 function player:update(dt)
@@ -471,8 +471,8 @@ end
 function player:draw()
     local y = self:calcY()
     love.graphics.setColor(255, 140, 0, 255)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 50, 50, 0)
-    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 50, 50, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH - TERRAIN_WIDTH, y, 5, 5, 0)
+    love.graphics.rectangle("fill", self.x % TERRAIN_WIDTH, y, 5, 5, 0)
 
     -- draw the drill
     love.graphics.setColor(80, 80, 80, 255)
