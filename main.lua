@@ -14,8 +14,8 @@ world = {
 }
 
 screen = {
-  WIDTH = 1440,
-  HEIGHT = 500
+  WIDTH = 800,
+  HEIGHT = 600
 }
 
 camera = {
@@ -239,15 +239,17 @@ function love.draw()
     love.graphics.setCanvas()
     
     -- final draw
-    drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
-    drawShader:send("cameraScale", camera.scale)
-    love.graphics.setShader(drawShader)
-    love.graphics.draw(intermediateCanvas, 0, 0)
-    love.graphics.setShader()
-
+    aspectRatioScale = screen.HEIGHT / world.HEIGHT
+    
     for x=0,people.COUNT do
         people[x]:draw()
     end
+    
+    drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
+    drawShader:send("cameraScale", camera.scale)
+    love.graphics.setShader(drawShader)
+    love.graphics.draw(intermediateCanvas, 0, 0, 0, aspectRatioScale, aspectRatioScale)
+    love.graphics.setShader()
 
     -- show the fps counter
     if showFPSCounter then
@@ -676,13 +678,13 @@ people = {
 
 function createPerson()
     local person = {}
-    person.x = love.math.random(0, terrain.WIDTH)
+    person.x = love.math.random(0, world.WIDTH)
     person.target = person.x
 
     function person:update(dt)
         -- new target
         if love.math.random() < (0.1 * dt) then
-            self.target = love.math.random(0, terrain.WIDTH)
+            self.target = love.math.random(0, world.WIDTH)
             if math.abs(self.target - player.x) > 250 then
                 self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
             elseif math.abs(self.target - player.x) > 150 then
@@ -692,13 +694,16 @@ function createPerson()
             end
         end
         local limit = dt * 100
-        self.x = self.x + clamp(-limit, self.target - self.x, limit)
+        self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
     end
     function person:draw()
-        love.graphics.setColor(255, 140, 0, 255)
         local dir = 1
         if person.target - person.x > 0 then dir = -1 end
-        love.graphics.draw(protestorSheet, protestorQuad, self.x, 195, 0, dir, 1, 8, 8)
+
+        local y = terrain:worldSurface(self.x)
+        love.graphics.setCanvas(intermediateCanvas)
+        love.graphics.draw(protestorSheet, protestorQuad, self.x, y, 0, dir, 1, 8, 12)
+        love.graphics.setCanvas()
     end
     return person
 end
