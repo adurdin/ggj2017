@@ -1605,6 +1605,9 @@ function player:finishPumping()
 
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
 
+    local msg = "Income"
+    messages:spawn("$"..toCurrency(self.pumpScore)..": "..msg, {0, 255, 0, 255})
+
     print("finish pumping")
 end
 
@@ -1757,6 +1760,9 @@ function createPerson()
                     soundEmit("splat", 0.5 + love.math.random(), 0.5 + love.math.random())
                     self:kill(-diff)
                     player.score = player.score - player.LAWYER_PRICE
+
+                    local msg = "Breach of the peace"
+                    messages:spawn("$-"..toCurrency(player.LAWYER_PRICE)..": "..msg, {255, 0, 0, 255})
                 end
             elseif math.abs(diff) < 30 then
                 self.target = player.x - diff * 5
