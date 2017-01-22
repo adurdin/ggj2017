@@ -1457,7 +1457,11 @@ function player:draw()
     local derrickY = self.derrickY
     if self.isDrilling then derrickY = derrickY + love.math.random(-0.3, 0.3) end
     for i=1,3 do
-        love.graphics.draw(self.image, self.derrickQuad, xs[i], derrickY,
+        love.graphics.draw(
+            self.image,
+            self.derrickQuad,
+            xs[i] + love.math.random(-self.vel / 500, self.vel / 500),
+            derrickY,
             0, -- rotation
             self.direction, 1, -- scale
             (self.derrickQuadWidth / 2), self.derrickQuadHeight)
