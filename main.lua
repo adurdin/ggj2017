@@ -1185,9 +1185,13 @@ function player:update(dt)
         end
 
         -- move the player
-        self.vel = self.vel + x * dt * 100
+        self.vel = self.vel + x * dt * 80
         self.x = (self.x + self.vel * dt) % world.WIDTH
-        self.vel = self.vel * (1 - 0.8 * dt)
+        if moveLeft or moveRight then
+            self.vel = self.vel * (1 - 0.2 * dt)
+        else
+            self.vel = self.vel * (1 - 5 * dt)
+        end
         if (math.abs(self.vel) < 0.1) then
             self.vel = 0
         end
