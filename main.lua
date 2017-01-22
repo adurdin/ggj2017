@@ -41,6 +41,73 @@ level.next = nil
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 --
+-- SOUND
+
+sounds = {
+    test    = {"assets/sounds/test1.wav",   nil, false},
+    sonar   = {"assets/sounds/sonar.wav",   nil, false},
+    splat   = {"assets/sounds/splat.wav",   nil, false},
+    colapse = {"assets/sounds/colapse.wav", nil, false},
+    deposit = {"assets/sounds/deposit.wav", nil, false},
+    drill   = {"assets/sounds/drill.wav",   nil, true}
+}
+
+function soundLoad()
+    for key, value in pairs(sounds) do
+        local path = value[1]
+        local src = love.audio.newSource(path, "static")
+        sounds[key][2] = src
+        if not src then
+            print("unable to load " .. path)
+        else
+            local loop = value[3]
+            src:setLooping(loop)
+        end
+    end
+end
+
+function soundEmit(name, vol, pitch)
+    if not vol then
+        vol = 0.75
+    end
+    if not pitch then
+        pitch = 1.0
+    end
+    local sound = sounds[name]
+    if sound then
+        local src = sound[2]
+        if src then
+            src:setVolume(vol)
+            src:setPitch(pitch)
+            if (sound[3]) then -- looping
+                src:rewind()
+            end
+            src:play()
+        end
+    end
+end
+
+function soundStop(name)
+    local sound = sounds[name]
+    if sound then
+        local src = sound[2]
+        if src then
+            src:stop()
+        end
+    end
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
 -- UTILITY FUNCTIONS
 
 function toCurrency(number)
@@ -95,6 +162,14 @@ function setWindow(width, height, fullscreen)
         minheight = 480,
         highdpi = false,
     })
+end
+
+function printCenteredShadowedText(text, y, color, shadowColor)
+    local offset = 2
+    love.graphics.setColor(shadowColor[1], shadowColor[2], shadowColor[3], shadowColor[4])
+    love.graphics.printf(text, offset, y+offset, screen.WIDTH, "center")
+    love.graphics.setColor(color[1], color[2], color[3], color[4])
+    love.graphics.printf(text, 0, y, screen.WIDTH, "center")
 end
 
 -- --------------------------------------------------------------------------------------
@@ -198,6 +273,7 @@ end
 -- HELP LEVEL
 
 helpLevel = {}
+helpLevel = {}
 
 function helpLevel:load()
     -- load help graphics
@@ -237,14 +313,69 @@ creditsLevel = {}
 
 function creditsLevel:load()
     -- load credits sprites
+    self.titleSize = 24
+    self.nameSize = 32
+    self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
+    self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+    self.titleColor = {32, 192, 255, 255}
+    self.nameColor = {255, 255, 255, 255}
+    self.shadowColor = {64, 64, 64, 255}
+    self.scrollY = screen.HEIGHT
+end
+
+function creditsLevel:printTitle(text, y)
+    love.graphics.setFont(self.titleFont)
+    printCenteredShadowedText(text, y, self.titleColor, self.shadowColor)
+    return y + self.titleSize
+end
+
+function creditsLevel:printName(text, y)
+    love.graphics.setFont(self.nameFont)
+    printCenteredShadowedText(text, y, self.nameColor, self.shadowColor)
+    return y + self.nameSize
+end
+
+function creditsLevel:blankLine(y)
+    return y + self.titleSize
 end
 
 function creditsLevel:draw()
-    love.graphics.setFont(debugVars.debugFont)
+    y = self.scrollY
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
-    love.graphics.setColor(0, 255, 0, 255)
-    love.graphics.print("TODO: credits", 0, 0)
+
+    y = self:printTitle("Team Wrangling / First Casualty", y)
+    y = self:printName("Aaron Dron", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Civil & Industrial Engineering", y)
+    y = self:printName("Aidan Dodds", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Geological Subduction", y)
+    y = self:printName("Andy Durdin", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Crowd Control", y)
+    y = self:printName("David Farrell", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Seismic Imaging", y)
+    y = self:printName("Gordon Brown", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Infrastructure / Second Casualty", y)
+    y = self:printName("Luke Drummond", y)
+    y = self:blankLine(y)
+
+    y = y + 200
+
+    y = self:printTitle("Intrepid Polar Expedition", y)
+    y = self:printName("Gordon Brown, David Farrell, Aidan Dodds", y)
+
+    if y < 0 then
+        level.next = menuLevel
+    end
 end
 
 function creditsLevel:keypressed(key)
@@ -253,7 +384,8 @@ function creditsLevel:keypressed(key)
     end
 end
 
-function creditsLevel:update()
+function creditsLevel:update(dt)
+    self.scrollY = self.scrollY - 50 * dt
 end
 
 -- --------------------------------------------------------------------------------------
@@ -275,8 +407,18 @@ gameLevel = {
 
 function gameLevel:load()
     -- When the game starts:
+
+    -- random seed
+    gameLevel.seed = (love.math.random() - 0.5) * 10 * 2 * terrain.WIDTH
+
+    -- load the hud fonts
+    gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 32)
+    gameLevel.timerFont = love.graphics.newFont("assets/nullp.ttf", 48)
+
     -- load an image
     protestorSheet = love.graphics.newImage("assets/protestors.png")
+    protestorSheet:setFilter("nearest", "nearest")
+    protestorSheet:setWrap("clamp", "clamp")
 
     houseSheet = love.graphics.newImage("assets/houses.png")
     houseSheet:setFilter("nearest", "nearest")
@@ -288,6 +430,13 @@ function gameLevel:load()
     intermediateCanvas = love.graphics.newCanvas(world.WIDTH, world.HEIGHT)
     intermediateCanvas:setWrap("repeat", "clamp")
     intermediateCanvas:setFilter("nearest", "nearest")
+
+    bloodParticleImage = love.graphics.newImage("assets/blood.png")
+    bloodParticleImage:setFilter("nearest", "nearest")
+    bloodParticleImage:setWrap("clamp", "clamp")
+ 
+    -- load all of the sounds we can
+    soundLoad()
 
     -- set background colour
     love.graphics.setBackgroundColor(255,255,255)
@@ -318,11 +467,13 @@ function gameLevel:load()
 end
 
 function gameLevel:update(dt)
-    -- count down until game over
-    gameLevel.timeRemaining = gameLevel.timeRemaining - dt
-    if gameLevel.timeRemaining <= 0 then
-        level.next = gameOverLevel
-        return
+    -- count down until game over (except in debug mode)
+    if not debugVars.debugModeEnabled then
+        gameLevel.timeRemaining = gameLevel.timeRemaining - dt
+        if gameLevel.timeRemaining <= 0 then
+            level.next = gameOverLevel
+            return
+        end
     end
 
     sonar:update(dt)
@@ -337,6 +488,7 @@ function gameLevel:update(dt)
         if not previousCanStartPumping and canStartPumping then
             print("a deposit!")
             -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
+            soundEmit("deposit")
         end
         previousCanStartPumping = canStartPumping
 
@@ -363,7 +515,11 @@ function gameLevel:update(dt)
 
     -- update people
     for x=0,(people.COUNT-1) do
-        people[x]:update(dt)
+        if people[x].alive then
+            people[x]:update(dt)
+        elseif love.math.random() < 0.1 * dt then
+            people[x]:respawn()
+        end
     end
     
     if houses then
@@ -375,9 +531,9 @@ function gameLevel:update(dt)
     -- update camera position
     
     if debugVars.cameraControlEnabled then
-        camera.scale = 0.5
-        camera.positionX = player.x - (screen.WIDTH / 2) / camera.scale
-        camera.positionY = 0
+        camera.scale = 2.0
+        camera.positionX = player.x - (screen.WIDTH / 2.0) / camera.scale
+        camera.positionY = 100.0
     else
         camera.scale = 0.6
         camera.positionX = 50.0
@@ -421,11 +577,16 @@ function gameLevel:keypressed(key, unicode)
         screenHeight = love.graphics.getHeight()
         sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
         sonar.currentTime = sonar.maxTime;
+        soundEmit("sonar")
     end
 
     -- toggle FPS counter on ctrl+f
     if key == "f" and isCtrlPressed() then
         debugVars.showFPSCounter = not debugVars.showFPSCounter
+    end
+
+    if key == "v" then
+        soundEmit("test")
     end
 end
 
@@ -483,7 +644,7 @@ function gameLevel:draw()
     
     -- draw people folk
     for x=0,(people.COUNT-1) do
-        people[x]:draw()
+        if people[x].alive then people[x]:draw() end
     end
     
     -- draw game world to screen
@@ -497,17 +658,23 @@ function gameLevel:draw()
 
     -- show the player score
     love.graphics.push()
-    love.graphics.setFont(debugVars.debugFont)
-    love.graphics.setColor(0, 0, 0, 255)
-    love.graphics.print("Score: $"..toCurrency(player.score), 20, 20)
+    love.graphics.setFont(gameLevel.scoreFont)
+    local text = "$"..toCurrency(math.floor(player.drawScore))
+    local textColor
+    if player.drawScore < 0 then
+        textColor = {200, 32, 16, 255}
+    else
+        textColor = {0, 0, 0, 255}
+    end
+    printCenteredShadowedText(text, 10, textColor, {255, 255, 255, 192})
     love.graphics.pop()
 
     -- draw game time remaining
     love.graphics.push()
-    love.graphics.setFont(debugVars.debugFont)
-    love.graphics.setColor(0, 0, 0, 255)
+    love.graphics.setFont(gameLevel.timerFont)
     local secondsLeft = math.floor(gameLevel.timeRemaining)
-    love.graphics.print("Time left: "..tostring(secondsLeft), 20, 40)
+    local text = tostring(secondsLeft)
+    printCenteredShadowedText(text, 40, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
 end
 
@@ -719,7 +886,7 @@ function generateTerrainPixel(x, y, r, g, b, a)
     local scale = 3.5
     local scaleX = 1 * scale
     local scaleY = 1.5 * scale
-    local noise = love.math.noise(x / terrain.width * scaleX, y / terrain.height * scaleY)
+    local noise = love.math.noise(x / terrain.width * scaleX + gameLevel.seed, y / terrain.height * scaleY + gameLevel.seed)
     local isDirt = (noise > 0.24)
     -- rgb channels can be used for color data
     -- alpha channel is terrain data and should not be rendered
@@ -749,8 +916,11 @@ function terrain:create()
     self.data = love.image.newImageData(self.width, self.height)
     self.collapsing = false
 
-    -- create a terrain and copy it into the second data buffer
+    -- create a terrain
     self.data:mapPixel(generateTerrainPixel)
+    self:removeGasFromColumn(0)
+    self:removeGasFromColumn(self.width-1)
+
     self.image = love.graphics.newImage(self.data)
     self.image:setFilter("nearest", "nearest")
     self.image:setWrap("repeat", "clamp")
@@ -908,10 +1078,12 @@ end
 
 function terrain:startCollapse(x, minX, maxX, minY, maxY)
     if self.collapsing then
-        error("already collapsing")
+        print("error already collapsing. ignore it")
+        return
     end
     self.collapsing = true
     self:wakeColumn(x)
+    soundEmit("colapse")
 end
 
 function terrain:wakeColumn(x)
@@ -956,7 +1128,17 @@ function terrain:worldSurface(worldX, vx)
     end
 end
 
-function terrain:floodfill(x, y, a)
+function terrain:removeGasFromColumn(x)
+    terrainColour = {123, 69, 23}
+    for y=0,(self.height-1) do
+        local _, _, _, a = self.data:getPixel(x, y)        
+        if a == TERRAIN_GAS_ALPHA then
+            self:floodfill(x, y, TERRAIN_DIRT_ALPHA_MIN, terrainColour)
+        end
+    end
+end
+
+function terrain:floodfill(x, y, a, pixel)
     -- floodfill algorithm stolen from the forums
     local Queue={}
     Queue.__index=Queue
@@ -1017,6 +1199,9 @@ function terrain:floodfill(x, y, a)
             end
         end
         local r, g, b, _ = self.data:getPixel(x, y)
+        if pixel ~= nil then
+            r, g, b = pixel[1], pixel[2], pixel[3]
+        end
         self.data:setPixel(x, y, r, g, b, a)
         Q:setSeen(x, y)
         pixelCount = pixelCount + 1
@@ -1085,7 +1270,8 @@ player = {
     DRILL_EXTEND_SPEED = 64, -- frackulons/second
     DRILL_RETRACT_SPEED = 128, -- frackulons/second
     PUMP_RATE = 1000/4, -- terrain units / second; an 1000 unit deposit will take four seconds
-    GAS_PRICE = 987654/1 -- dollars / terrain units
+    GAS_PRICE = 987654/1, -- dollars / terrain units
+    LAWYER_PRICE = 17 * 1754362 -- dollars / protester
 }
 
 function player:create()
@@ -1098,6 +1284,8 @@ function player:create()
     self.trailerRot = 0
     self.frameCounter = 0
     self.score = 0
+    self.drawScore = self.score
+    self.drawScoreAccum = 0
 
     -- drilling
     self.isDrilling = false
@@ -1149,7 +1337,7 @@ function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
     -- control inputs
-    local retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
+    local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w"))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
     local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a"))
     local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d"))
@@ -1190,9 +1378,13 @@ function player:update(dt)
         end
 
         -- move the player
-        self.vel = self.vel + x * dt * 100
+        self.vel = self.vel + x * dt * 80
         self.x = (self.x + self.vel * dt) % world.WIDTH
-        self.vel = self.vel * (1 - 0.8 * dt)
+        if moveLeft or moveRight then
+            self.vel = self.vel * (1 - 0.2 * dt)
+        else
+            self.vel = self.vel * (1 - 5 * dt)
+        end
         if (math.abs(self.vel) < 0.1) then
             self.vel = 0
         end
@@ -1233,6 +1425,15 @@ function player:update(dt)
     -- put the drill in the trailer
     self.drillX = self.derrickX
     self.drillY = self.derrickY
+
+    -- update player draw score
+    self.drawScoreAccum = self.drawScoreAccum + dt
+    local timestep = 1 / 35
+    if self.drawScoreAccum > timestep then
+        self.drawScoreAccum = self.drawScoreAccum - timestep
+        local limit = 800000000
+        self.drawScore = self.drawScore + clamp(-limit * dt, self.score - self.drawScore, limit * dt)
+    end
 end
 
 function player:draw()
@@ -1241,7 +1442,11 @@ function player:draw()
     -- draw the fractor (three copies because of world wrapping)
     local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
     for i=1,3 do
-        love.graphics.draw(self.image, self.playerQuad, xs[i], self.y + 4,
+        love.graphics.draw(
+            self.image,
+            self.playerQuad,
+            xs[i]      + love.math.random(-self.vel / 500, self.vel / 500),
+            self.y + 4 + love.math.random(-0.1,  0.05),
             self.rot, -- rotation
             self.direction, 1, -- scale
             (self.playerQuadWidth / 2), self.playerQuadHeight)
@@ -1249,8 +1454,10 @@ function player:draw()
 
     -- draw the derrick (three copies because of world wrapping)
     local xs = {self.derrickX, self.derrickX - world.WIDTH, self.derrickX + world.WIDTH}
+    local derrickY = self.derrickY
+    if self.isDrilling then derrickY = derrickY + love.math.random(-0.3, 0.3) end
     for i=1,3 do
-        love.graphics.draw(self.image, self.derrickQuad, xs[i], self.derrickY,
+        love.graphics.draw(self.image, self.derrickQuad, xs[i], derrickY,
             0, -- rotation
             self.direction, 1, -- scale
             (self.derrickQuadWidth / 2), self.derrickQuadHeight)
@@ -1295,6 +1502,7 @@ function player:retractDrill(dt)
     player.drillDepth = math.max(0, player.drillDepth - (player.DRILL_RETRACT_SPEED * dt))
     if player.drillDepth == 0 then
         player.isDrilling = false
+        player.autoRetracting = false
     end
 end
 
@@ -1341,6 +1549,7 @@ function player:finishPumping()
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
     self.score = self.score + self.pumpScore
     self.isPumping = false
+    self.autoRetracting = true
 
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
 
@@ -1363,7 +1572,7 @@ end
 houses = {}
 
 houseData = {
-    REQUIRED = 64,
+    REQUIRED = 20,
     COUNT = 8,
     prefab = {
         0, 0, 32, 48,
@@ -1382,7 +1591,7 @@ function createHouse()
 
     function house:spawn()
         house.x = love.math.random(0, world.WIDTH)
-        local pick = math.floor(love.math.random(houseData.COUNT-1) * 4)
+        local pick = math.floor(love.math.random(houseData.COUNT) - 1) * 4
         house.width = houseData.prefab[pick + 3]
         house.height = houseData.prefab[pick + 4]
         assert (houseSheet)
@@ -1437,48 +1646,93 @@ end
 -- PEOPLE
 
 people = {
-    COUNT = 20
+    COUNT = 40,
+    DEATH_TIME = 3, -- seconds
 }
 
 function createPerson()
     local person = {}
-    person.x = love.math.random(0, world.WIDTH)
-    person.target = person.x
-    person.anger = love.math.random(0, 1)
-    person.accumulator = 0
-    person.quad = love.graphics.newQuad(love.math.random(0, 3) * 16,
-                                        love.math.random(0, 3) * 16,
-                                        16, 16, 64, 64)
+
+    function person:init()
+        self.x = love.math.random(0, world.WIDTH)
+        self.alive = true
+        self.dying = false
+        self.deadTime = 0
+        self.deadX = 0
+        self.target = self.x
+        self.anger = love.math.random(0, 1)
+        self.accumulator = 0
+        self.quad = love.graphics.newQuad(love.math.random(0, 3) * 16,
+                                            love.math.random(0, 3) * 16,
+                                            16, 16, 64, 64)
+        -- blood particles
+        self.bloodParticleCount = 64
+        self.bloodParticles = love.graphics.newParticleSystem(bloodParticleImage, self.bloodParticleCount)
+        self.bloodParticles:setParticleLifetime(0.25, 1.0)
+        self.bloodParticles:setColors(255, 255, 255, 255,  255, 255, 255, 128) -- Fade to transparency.
+        self.bloodParticles:setPosition(0, -6)
+    end
+
+    function person:kill(velX)
+        self.dying = true
+        self.deadTime = love.timer.getTime() + people.DEATH_TIME
+        self.deadX = self.x + 15 * velX
+        person.bloodParticles:setLinearAcceleration(-(5 * velX), -10, (5 * velX), 50) -- Randomized movement towards the bottom of the screen.
+        self.bloodParticles:emit(self.bloodParticleCount)
+    end
+
+    function person:respawn()
+        self:init()
+    end
 
     function person:update(dt)
-        -- run away
-        local diff = player.x - self.x
-        if math.abs(diff) < 30 then
-            self.target = player.x - diff * 5
-        end
-        -- new target
-        if love.math.random() < (0.5 * dt) then
-            self.target = love.math.random(0, world.WIDTH)
-            if math.abs(self.target - player.x) > 250 then
-                self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
-            elseif math.abs(self.target - player.x) > 150 then
-                self.target = self.target + (player.x - self.target) * love.math.random(0.25, 0.85)
-            else
-                self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
+        if self.dying then
+            -- get y coord and normal, move towards deadX
+            -- local y, nx, ny = terrain:worldSurface(self.x)
+            -- local limit = dt * ny * ny
+            -- self.x = (self.x + clamp(-limit, self.deadX - self.x, limit)) % world.WIDTH
+            self.x = lerp(self.x, self.deadX, dt)
+
+            if love.timer.getTime() > self.deadTime then
+                self.alive = false
             end
-        end
-
-        -- get y coord and normal
-        local y, nx, ny = terrain:worldSurface(self.x)
-
-        -- scale speed by y component of normal
-        local limit = dt * lerp(100, 150, self.anger) * ny * ny
-        self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
-
-        if math.abs(self.target - self.x) < 2 then
-            self.accumulator = 0
+            self.bloodParticles:update(dt)
         else
-            self.accumulator = (self.accumulator + dt) % lerp(0.2, 0.1, self.anger)
+            -- run away
+            local diff = player.x - self.x
+            if math.abs(diff) < 22 and (math.abs(player.vel) - math.abs(diff)) > 0 then
+                if self.alive then
+                    soundEmit("splat", 0.5 + love.math.random(), 0.5 + love.math.random())
+                    self:kill(-diff)
+                    player.score = player.score - player.LAWYER_PRICE
+                end
+            elseif math.abs(diff) < 30 then
+                self.target = player.x - diff * 5
+            end
+            -- new target
+            if love.math.random() < (0.5 * dt) then
+                self.target = love.math.random(0, world.WIDTH)
+                if math.abs(self.target - player.x) > 250 then
+                    self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
+                elseif math.abs(self.target - player.x) > 150 then
+                    self.target = self.target + (player.x - self.target) * love.math.random(0.25, 0.85)
+                else
+                    self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
+                end
+            end
+
+            -- get y coord and normal
+            local y, nx, ny = terrain:worldSurface(self.x)
+
+            -- scale speed by y component of normal
+            local limit = dt * lerp(100, 150, self.anger) * ny * ny
+            self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
+
+            if math.abs(self.target - self.x) < 2 then
+                self.accumulator = 0
+            else
+                self.accumulator = (self.accumulator + dt) % lerp(0.2, 0.1, self.anger)
+            end
         end
     end
     function person:draw()
@@ -1494,9 +1748,22 @@ function createPerson()
 
         love.graphics.setCanvas(intermediateCanvas)
         love.graphics.setColor(255, 255, 255, 255)
-        love.graphics.draw(protestorSheet, self.quad, self.x, y, -angle, dir, 1, 8, 12)
+
+        if self.dying then
+            if dir > 0 then
+                angle = -math.pi / 2
+            else
+                angle = math.pi / 2
+            end
+            love.graphics.draw(protestorSheet, self.quad, self.x, y, angle, 1, 1, 8, 12)
+            love.graphics.draw(self.bloodParticles, self.x, y)
+        else
+            love.graphics.draw(protestorSheet, self.quad, self.x, y, -angle, dir, 1, 8, 12)
+        end
+
         love.graphics.setCanvas()
     end
+    person:init()
     return person
 end
 
