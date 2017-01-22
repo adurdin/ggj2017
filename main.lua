@@ -1131,7 +1131,7 @@ function player:update(dt)
     local spacePressed = love.keyboard.isDown("space")
 
     -- start drilling when the player presses down
-    if extendDrill and self.vel == 0 and not self.isDrilling and not self.isPumping and not spacePressed then
+    if extendDrill and math.abs(self.vel) < 30 and not self.isDrilling and not self.isPumping and not spacePressed then
         self.isDrilling = true
         self.vel = 0
     end
@@ -1165,10 +1165,10 @@ function player:update(dt)
         end
 
         -- move the player
-        self.vel = self.vel + x * dt * 1000
+        self.vel = self.vel + x * dt * 100
         self.x = (self.x + self.vel * dt) % world.WIDTH
-        self.vel = self.vel * (1 - 10 * dt)
-        if (math.abs(self.vel) < 0.05) then
+        self.vel = self.vel * (1 - 0.8 * dt)
+        if (math.abs(self.vel) < 0.1) then
             self.vel = 0
         end
 
