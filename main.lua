@@ -704,7 +704,7 @@ function gameOverLevel:draw()
     love.graphics.clear()
     love.graphics.setColor(0, 255, 255, 255)
     love.graphics.print("TODO: GAME OVER", 0, 0)
-    love.graphics.print("Your score: "..tostring(gameOverLevel.score), 0, 16)
+    love.graphics.print("Your score: $"..toCurrency(gameOverLevel.score), 0, 16)
 end
 
 function gameOverLevel:keypressed(key)
