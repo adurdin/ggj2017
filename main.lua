@@ -1138,7 +1138,8 @@ player = {
     DRILL_EXTEND_SPEED = 64, -- frackulons/second
     DRILL_RETRACT_SPEED = 128, -- frackulons/second
     PUMP_RATE = 1000/4, -- terrain units / second; an 1000 unit deposit will take four seconds
-    GAS_PRICE = 987654/1 -- dollars / terrain units
+    GAS_PRICE = 987654/1, -- dollars / terrain units
+    LAWYER_PRICE = 17 * 1754362 -- dollars / protester
 }
 
 function player:create()
@@ -1513,7 +1514,7 @@ function createPerson()
         local diff = player.x - self.x
         if math.abs(diff) < 22 and (math.abs(player.vel) - math.abs(diff)) > 0 then
             self.alive = false
-            player.score = player.score - 17 * 1754362
+            player.score = player.score - player.LAWYER_PRICE
         elseif math.abs(diff) < 30 then
             self.target = player.x - diff * 5
         end
