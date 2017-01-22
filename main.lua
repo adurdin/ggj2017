@@ -70,7 +70,8 @@ function soundLoad()
             src:setLooping(loop)
         end
     end
-    soundEmit("music", 0.5, 1.0)
+    -- BUG: this is playing music over the top of itself. Fix it later.
+    -- soundEmit("music", 0.5, 1.0)
 end
 
 function soundEmit(name, vol, pitch)
@@ -237,19 +238,48 @@ end
 menuLevel = {}
 
 function menuLevel:load()
-    -- load menu graphics
+    -- load credits sprites
+    self.titleSize = 64
+    self.nameSize = 48
+    self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
+    self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+    self.titleColor = {255, 64, 32, 255}
+    self.nameColor = {255, 255, 255, 255}
+    self.shadowColor = {64, 64, 64, 255}
+    self.scrollY = screen.HEIGHT
+end
+
+function menuLevel:printTitle(text, y)
+    love.graphics.setFont(self.titleFont)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.titleColor, self.shadowColor)
+    return y + self.titleSize
+end
+
+function menuLevel:printName(text, y)
+    love.graphics.setFont(self.nameFont)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.nameColor, self.shadowColor)
+    return y + self.nameSize
+end
+
+function menuLevel:blankLine(y)
+    return y + self.titleSize
 end
 
 function menuLevel:draw()
     love.graphics.setFont(debugVars.debugFont)
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
-    love.graphics.setColor(255, 0, 0, 255)
-    love.graphics.print("FRACK THE PLANET", 0, 0)
-    love.graphics.print("SPACE to play", 0, 32)
-    love.graphics.print("H for help", 0, 48)
-    love.graphics.print("C for credits", 0, 64)
-    love.graphics.print("Q to quit", 0, 80)
+
+    local y = 50
+    y = self:printTitle("F R A C K  t h e  P L A N E T", y)
+    y = self:blankLine(y)
+    y = self:printName("SPACE to start", y)
+    y = self:blankLine(y)
+    y = self:printTitle("Controls:", y)
+    y = self:printName("Left/Right ------------------------- Drive", y)
+    y = self:printName("Space ---  Scan for gas deposits", y)
+    y = self:printName("Up/Down --------------  Drill up/down", y)
+    y = self:printName("Space (hold) --- Pump gas from deposit", y)
 end
 
 function menuLevel:keypressed(key)
@@ -742,19 +772,48 @@ gameOverLevel = {}
 function gameOverLevel:load()
     -- load gameOver graphics
     gameOverLevel.score = player.score
+
+    -- load credits sprites
+    self.titleSize = 64
+    self.nameSize = 48
+    self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
+    self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+    self.titleColor = {255, 64, 32, 255}
+    self.nameColor = {255, 255, 255, 255}
+    self.shadowColor = {64, 64, 64, 255}
+    self.scrollY = screen.HEIGHT
+end
+
+function gameOverLevel:printTitle(text, y)
+    love.graphics.setFont(self.titleFont)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.titleColor, self.shadowColor)
+    return y + self.titleSize
+end
+
+function gameOverLevel:printName(text, y)
+    love.graphics.setFont(self.nameFont)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.nameColor, self.shadowColor)
+    return y + self.nameSize
+end
+
+function gameOverLevel:blankLine(y)
+    return y + self.titleSize
 end
 
 function gameOverLevel:draw()
-    love.graphics.setFont(debugVars.debugFont)
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
-    love.graphics.setColor(0, 255, 255, 255)
-    love.graphics.print("TODO: GAME OVER", 0, 0)
-    love.graphics.print("Your score: $"..toCurrency(gameOverLevel.score), 0, 16)
+
+    local y = 50
+    y = self:printTitle("- GAME OVER -", y)
+    y = self:blankLine(y)
+    y = self:printName("Your score: $"..toCurrency(gameOverLevel.score), y)
+    y = self:blankLine(y)
+    y = self:printName("ESC to restart", y)
 end
 
 function gameOverLevel:keypressed(key)
-    if key == "space" or key == "escape" or key == "return" then
+    if key == "escape" or key == "return" then
         level.next = menuLevel
     end
 end
@@ -1129,7 +1188,8 @@ function terrain:startCollapse(x, minX, maxX, minY, maxY)
     end
     self.collapsing = true
     self:wakeColumn(x)
-    soundEmit("colapse")
+    -- BUG: this sound is pretty quiet, so we tried to bump the volume up. I don't think it worked.
+    soundEmit("colapse", 1.0, 4.0)
 end
 
 function terrain:wakeColumn(x)
