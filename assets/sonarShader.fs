@@ -70,6 +70,11 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     float aspectRation = WORLD_WIDTH / WORLD_HEIGHT;
     
     float distance = sqrt(pow(abs(sourcePosition.x - textureCoords.x) * aspectRation, 2) + pow(abs(sourcePosition.y - textureCoords.y), 2));
+    float distanceLeft = sqrt(pow(abs(sourcePosition.x - 1.0f - textureCoords.x) * aspectRation, 2) + pow(abs(sourcePosition.y - textureCoords.y), 2));
+    float distanceRight = sqrt(pow(abs(sourcePosition.x + 1.0f - textureCoords.x) * aspectRation, 2) + pow(abs(sourcePosition.y - textureCoords.y), 2));
+    
+    distance = min(distance, min(distanceLeft, distanceRight));
+    
     float normalizedDistance = distance / radius;
     
     if (terrainType != M_TERRAIN_TYPE_SKY) {

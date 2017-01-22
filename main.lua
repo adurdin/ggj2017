@@ -23,8 +23,7 @@ SCREEN_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
 camera = {
     positionX = 0.0, -- world space coordinate that is top left of camera
     positionY = 0.0,
-    scale = 1.0, -- 1.0 is 1 to 1 pixels, 2.0 is double size pixels
-    shake
+    scale = 1.0 -- 1.0 is 1 to 1 pixels, 2.0 is double size pixels
 }
 
 level = {}
@@ -358,7 +357,9 @@ function gameLevel:update(dt)
     
     -- update camera position
     
-    camera.positionX = player.x - (screen.WIDTH / 2)
+    camera.scale = 2.0
+    camera.positionX = player.x - (screen.WIDTH / 2) / camera.scale
+    camera.positionY = 110
 end
 
 function gameLevel:keypressed(key, unicode)
@@ -451,7 +452,7 @@ function gameLevel:draw()
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
     
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
-    drawShader:send("cameraScale", camera.scale / SCREEN_CAMERA_SCALE / fullScreenCorrection)
+    drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
@@ -536,8 +537,6 @@ function love.draw()
     local windowWidth, windowHeight, _ = love.window.getMode()
     screen.WIDTH = windowWidth
     screen.HEIGHT = windowHeight
-    MINIMUM_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
-    camera.scale = MINIMUM_CAMERA_SCALE
 
     -- draw the current level
     local l = level.current
