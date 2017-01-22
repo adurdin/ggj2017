@@ -521,8 +521,11 @@ TERRAIN_GRAVITY = 16
 TERRAIN_TERMINAL_VELOCITY = 10
 
 function generateTerrainPixel(x, y, r, g, b, a)
-    local noise = love.math.noise(x / terrain.width * 16, y / terrain.height * 16, 0.1) * 2
-    local isDirt = (noise > 0.75)
+    local scale = 3.5
+    local scaleX = 1 * scale
+    local scaleY = 1.5 * scale
+    local noise = love.math.noise(x / terrain.width * scaleX, y / terrain.height * scaleY)
+    local isDirt = (noise > 0.24)
     -- rgb channels can be used for color data
     -- alpha channel is terrain data and should not be rendered
     if y < 5 then
