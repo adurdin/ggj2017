@@ -269,13 +269,15 @@ end
 --
 -- GAME LEVEL
 
-gameLevel = {}
+gameLevel = {
+    LEVEL_TIME = 60.0 -- seconds
+}
 
 function gameLevel:load()
     -- When the game starts:
     -- load an image
     protestorSheet = love.graphics.newImage("assets/protestors.png")
-    
+
     houseSheet = love.graphics.newImage("assets/houses.png")
     houseSheet:setFilter("nearest", "nearest")
     houseSheet:setWrap("clampzero", "clamp")
@@ -310,9 +312,18 @@ function gameLevel:load()
     for x=0, houseData.REQUIRED do
         houses[x] = createHouse()
     end
+
+    -- set up the timer (+ a bit so people don't feel cheated)
+    gameLevel.timeRemaining = gameLevel.LEVEL_TIME + 0.9
 end
 
 function gameLevel:update(dt)
+    -- count down until game over
+    gameLevel.timeRemaining = gameLevel.timeRemaining - dt
+    if gameLevel.timeRemaining <= 0 then
+        level.next = gameOverLevel
+        return
+    end
 
     sonar:update(dt)
 
@@ -448,15 +459,13 @@ function gameLevel:draw()
         love.graphics.setCanvas()
     end
     
-    -- final draw
-    
     -- draw people folk
     for x=0,(people.COUNT-1) do
         people[x]:draw()
     end
     
+    -- draw game world to screen
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
-    
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
     drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
     love.graphics.setShader(drawShader)
@@ -467,8 +476,54 @@ function gameLevel:draw()
     love.graphics.push()
     love.graphics.setFont(debugVars.debugFont)
     love.graphics.setColor(0, 0, 0, 255)
-    love.graphics.print("Score: $"..toCurrency(player.score)..",000,000", 20, 20)
+    love.graphics.print("Score: $"..toCurrency(player.score), 20, 20)
     love.graphics.pop()
+
+    -- draw game time remaining
+    love.graphics.push()
+    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setColor(0, 0, 0, 255)
+    local secondsLeft = math.floor(gameLevel.timeRemaining)
+    love.graphics.print("Time left: "..tostring(secondsLeft), 20, 40)
+    love.graphics.pop()
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- GAME OVER LEVEL
+
+gameOverLevel = {}
+
+function gameOverLevel:load()
+    -- load gameOver graphics
+    gameOverLevel.score = player.score
+end
+
+function gameOverLevel:draw()
+    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setBackgroundColor(0, 0, 0, 255)
+    love.graphics.clear()
+    love.graphics.setColor(0, 255, 255, 255)
+    love.graphics.print("TODO: GAME OVER", 0, 0)
+    love.graphics.print("Your score: "..tostring(gameOverLevel.score), 0, 16)
+end
+
+function gameOverLevel:keypressed(key)
+    if key == "space" or key == "escape" or key == "return" then
+        level.next = menuLevel
+    end
+end
+
+function gameOverLevel:update()
 end
 
 -- --------------------------------------------------------------------------------------
@@ -1004,7 +1059,8 @@ player = {
     DRILL_MAX_DEPTH = terrain_to_world_height(terrain.HEIGHT), -- frackulons
     DRILL_EXTEND_SPEED = 64, -- frackulons/second
     DRILL_RETRACT_SPEED = 128, -- frackulons/second
-    PUMP_RATE = 1000/6, -- terrain units / second; an 1000 unit deposit will take six seconds
+    PUMP_RATE = 1000/4, -- terrain units / second; an 1000 unit deposit will take four seconds
+    GAS_PRICE = 987654/1 -- dollars / terrain units
 }
 
 function player:create()
@@ -1028,6 +1084,7 @@ function player:create()
     self.pumpX = 0
     self.pumpY = 0
     self.pumpSize = 0
+    self.pumpScore = 0
     self.pumpStartTime = 0
     self.pumpEndTime = 0
 
@@ -1241,6 +1298,7 @@ function player:startPumping()
     local _,_,_,_,size = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
     local duration = size / self.PUMP_RATE
     self.pumpSize = size
+    self.pumpScore = math.floor(self.GAS_PRICE * size)
     self.pumpStartTime = love.timer.getTime()
     self.pumpEndTime = self.pumpStartTime + duration
     self.isPumping = true
@@ -1256,7 +1314,7 @@ function player:finishPumping()
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
     tx = math.floor(tx); ty = math.floor(ty)
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
-    self.score = self.score + self.pumpSize
+    self.score = self.score + self.pumpScore
     self.isPumping = false
 
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
