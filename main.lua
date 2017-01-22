@@ -54,7 +54,8 @@ sounds = {
     drill_up   = {"assets/sounds/drill_up.wav",   nil, false},
     drill_down = {"assets/sounds/drill_down.wav", nil, false},
     pumping    = {"assets/sounds/pumping.wav", nil, false},
-    suck    = {"assets/sounds/suck.wav", nil, true}
+    suck    = {"assets/sounds/suck.wav", nil, true},
+    music   = {"assets/music.ogg", nil, true}
 }
 
 function soundLoad()
@@ -69,6 +70,7 @@ function soundLoad()
             src:setLooping(loop)
         end
     end
+    soundEmit("music", 0.5, 1.0)
 end
 
 function soundEmit(name, vol, pitch)
