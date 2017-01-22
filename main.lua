@@ -1311,10 +1311,10 @@ function player:update(dt)
 
     -- update player draw score
     self.drawScoreAccum = self.drawScoreAccum + dt
-    local timestep = 1 / 25
+    local timestep = 1 / 35
     if self.drawScoreAccum > timestep then
         self.drawScoreAccum = self.drawScoreAccum - timestep
-        local limit = 500000000
+        local limit = 800000000
         self.drawScore = self.drawScore + clamp(-limit * dt, self.score - self.drawScore, limit * dt)
     end
 end
