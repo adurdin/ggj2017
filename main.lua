@@ -44,23 +44,36 @@ level.next = nil
 -- SOUND
 
 sounds = {
-    coin = {"assets/sounds/test1.wav", nil}
+    test = {"assets/sounds/test1.wav", nil}
 }
 
 function soundLoad()
     for key, value in pairs(sounds) do
         local path = value[1]
-        sounds[key][1] = love.audio.newSource(path, "static")
-        if not sounds[key][1] then
+        sounds[key][2] = love.audio.newSource(path, "static")
+        if not sounds[key][2] then
             print("unable to load " .. path)
         end
     end
 end
 
-function soundEmit(name)
+function soundEmit(name, vol, pitch)
+    print (name)
+    if not vol then
+        vol = 0.75
+    end
+    if not pitch then
+        pitch = 1.0
+    end
     local sound = sounds[name]
     if sound then
-        print(name)
+        local src = sound[2]
+        if src then
+            src:setVolume(vol)
+            src:setPitch(pitch)
+            src:rewind()
+            src:play()
+        end
     end
 end
 
@@ -445,6 +458,10 @@ function gameLevel:keypressed(key, unicode)
     -- toggle FPS counter on ctrl+f
     if key == "f" and isCtrlPressed() then
         debugVars.showFPSCounter = not debugVars.showFPSCounter
+    end
+
+    if key == "v" then
+        soundEmit("test")
     end
 end
 
