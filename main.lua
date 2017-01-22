@@ -318,11 +318,13 @@ function gameLevel:load()
 end
 
 function gameLevel:update(dt)
-    -- count down until game over
-    gameLevel.timeRemaining = gameLevel.timeRemaining - dt
-    if gameLevel.timeRemaining <= 0 then
-        level.next = gameOverLevel
-        return
+    -- count down until game over (except in debug mode)
+    if not debugVars.debugModeEnabled then
+        gameLevel.timeRemaining = gameLevel.timeRemaining - dt
+        if gameLevel.timeRemaining <= 0 then
+            level.next = gameOverLevel
+            return
+        end
     end
 
     sonar:update(dt)
