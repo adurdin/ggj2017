@@ -44,25 +44,29 @@ level.next = nil
 -- SOUND
 
 sounds = {
-    test    = {"assets/sounds/test1.wav",   nil},
-    sonar   = {"assets/sounds/sonar.wav",   nil},
-    splat   = {"assets/sounds/splat.wav",   nil},
-    colapse = {"assets/sounds/colapse.wav", nil},
-    deposit = {"assets/sounds/deposit.wav", nil}
+    test    = {"assets/sounds/test1.wav",   nil, false},
+    sonar   = {"assets/sounds/sonar.wav",   nil, false},
+    splat   = {"assets/sounds/splat.wav",   nil, false},
+    colapse = {"assets/sounds/colapse.wav", nil, false},
+    deposit = {"assets/sounds/deposit.wav", nil, false},
+    drill   = {"assets/sounds/drill.wav",   nil, true}
 }
 
 function soundLoad()
     for key, value in pairs(sounds) do
         local path = value[1]
-        sounds[key][2] = love.audio.newSource(path, "static")
-        if not sounds[key][2] then
+        local src = love.audio.newSource(path, "static")
+        sounds[key][2] = src
+        if not src then
             print("unable to load " .. path)
+        else
+            local loop = value[3]
+            src:setLooping(loop)
         end
     end
 end
 
 function soundEmit(name, vol, pitch)
-    print (name)
     if not vol then
         vol = 0.75
     end
@@ -75,8 +79,20 @@ function soundEmit(name, vol, pitch)
         if src then
             src:setVolume(vol)
             src:setPitch(pitch)
-            src:rewind()
+            if (sound[3]) then -- looping
+                src:rewind()
+            end
             src:play()
+        end
+    end
+end
+
+function soundStop(name)
+    local sound = sounds[name]
+    if sound then
+        local src = sound[2]
+        if src then
+            src:stop()
         end
     end
 end
