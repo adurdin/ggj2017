@@ -1598,7 +1598,7 @@ end
 -- PEOPLE
 
 people = {
-    COUNT = 20,
+    COUNT = 40,
     DEATH_TIME = 3, -- seconds
 }
 
