@@ -113,6 +113,10 @@ function love.load()
     singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
 
     protestorSheet = love.graphics.newImage("assets/protestors.png")
+    
+    houseSheet = love.graphics.newImage("assets/houses.png")
+    houseSheet:setFilter("nearest", "nearest")
+    houseSheet:setWrap("clampzero", "clamp")
 
     sonarShader = love.graphics.newShader("assets/sonarShader.fs")
     drawShader = love.graphics.newShader("assets/drawShader.fs")
@@ -143,9 +147,14 @@ function love.load()
     -- create player
     player:create()
 
-    -- people
+    -- create people
     for x=0,(people.COUNT-1) do
         people[x] = createPerson()
+    end
+    
+    -- create houses
+    for x=0, houseData.REQUIRED do
+        houses[x] = createHouse()
     end
 end
 
@@ -170,6 +179,12 @@ function love.update(dt)
     -- update people
     for x=0,(people.COUNT-1) do
         people[x]:update(dt)
+    end
+    
+    if houses then
+        for key, value in pairs(houses) do
+            value:update()
+        end
     end
 end
 
@@ -228,6 +243,13 @@ function love.draw()
     love.graphics.setCanvas()
     love.graphics.setShader()
 
+    -- draw houses
+    if houses then
+        for key, value in pairs(houses) do
+            value:draw()
+        end
+    end
+
     -- render player
     love.graphics.setCanvas(intermediateCanvas)
     player:draw()
@@ -249,6 +271,7 @@ function love.draw()
     
     -- final draw
     
+    -- draw people folk
     for x=0,(people.COUNT-1) do
         people[x]:draw()
     end
@@ -754,6 +777,82 @@ function player:retractDrill(dt)
     if player.drillDepth == 0 then
         player.isDrilling = false
     end
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- HOUSE
+
+houses = {}
+
+houseData = {
+    REQUIRED = 64,
+    COUNT = 8,
+    prefab = {
+        0, 0, 32, 48,
+        32, 0, 32, 32,
+        64, 0, 32, 32,
+        96, 0, 32, 32,
+        64, 32, 32, 16,
+        96, 32, 32, 16,
+        64, 64, 32, 32,
+        0, 48, 16, 16
+    }
+}
+
+function createHouse()
+    local house = {}
+
+    function house:spawn()
+        house.x = love.math.random(0, world.WIDTH)
+        local pick = math.floor(love.math.random(houseData.COUNT-1) * 4)
+        house.width = houseData.prefab[pick + 3]
+        house.height = houseData.prefab[pick + 4]
+        assert (houseSheet)
+        house.quad = love.graphics.newQuad(
+            houseData.prefab[pick + 1],
+            houseData.prefab[pick + 2],
+            houseData.prefab[pick + 3],
+            houseData.prefab[pick + 4],
+            128,
+            64)
+        assert (house.quad)
+    end
+
+    function house:update()
+    end
+
+    function house:draw()
+        local y, nx, ny = terrain:worldSurface(self.x, 2)
+        local angle =-math.atan2(nx, ny)
+        assert (house.quad)
+        assert (houseSheet)
+        love.graphics.setCanvas(intermediateCanvas)
+        love.graphics.setColor(255, 255, 255, 255)
+        love.graphics.draw(
+          houseSheet, 
+          house.quad, 
+          house.x,                -- xpos
+          y + 3,   -- ypos
+          angle,                  -- angle
+          1, 1,                   -- scale
+          house.width /2 , house.height
+          
+          )
+        love.graphics.setCanvas()
+    end
+
+    house.spawn()
+    return house
 end
 
 -- --------------------------------------------------------------------------------------
