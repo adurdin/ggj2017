@@ -726,8 +726,11 @@ function terrain:create()
     self.data = love.image.newImageData(self.width, self.height)
     self.collapsing = false
 
-    -- create a terrain and copy it into the second data buffer
+    -- create a terrain
     self.data:mapPixel(generateTerrainPixel)
+    self:removeGasFromColumn(0)
+    self:removeGasFromColumn(self.width-1)
+
     self.image = love.graphics.newImage(self.data)
     self.image:setFilter("nearest", "nearest")
     self.image:setWrap("repeat", "clamp")
@@ -933,7 +936,17 @@ function terrain:worldSurface(worldX, vx)
     end
 end
 
-function terrain:floodfill(x, y, a)
+function terrain:removeGasFromColumn(x)
+    terrainColour = {123, 69, 23}
+    for y=0,(self.height-1) do
+        local _, _, _, a = self.data:getPixel(x, y)        
+        if a == TERRAIN_GAS_ALPHA then
+            self:floodfill(x, y, TERRAIN_DIRT_ALPHA_MIN, terrainColour)
+        end
+    end
+end
+
+function terrain:floodfill(x, y, a, pixel)
     -- floodfill algorithm stolen from the forums
     local Queue={}
     Queue.__index=Queue
@@ -994,6 +1007,9 @@ function terrain:floodfill(x, y, a)
             end
         end
         local r, g, b, _ = self.data:getPixel(x, y)
+        if pixel ~= nil then
+            r, g, b = pixel[1], pixel[2], pixel[3]
+        end
         self.data:setPixel(x, y, r, g, b, a)
         Q:setSeen(x, y)
         pixelCount = pixelCount + 1
