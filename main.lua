@@ -1315,7 +1315,7 @@ player = {
     DRILL_MAX_DEPTH = terrain_to_world_height(terrain.HEIGHT), -- frackulons
     DRILL_EXTEND_SPEED = 64, -- frackulons/second
     DRILL_RETRACT_SPEED = 128, -- frackulons/second
-    PUMP_RATE = 1000/4, -- terrain units / second; an 1000 unit deposit will take four seconds
+    PUMP_RATE = 1000/2, -- terrain units / second; an 1000 unit deposit will take four seconds
     GAS_PRICE = 987654/1, -- dollars / terrain units
     LAWYER_PRICE = 17 * 1754362 -- dollars / protester
 }
