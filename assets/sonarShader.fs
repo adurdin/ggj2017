@@ -56,7 +56,11 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
                 finalColourPixel = vec4(COLOUR_DIRT.rgb, 1.0f);
             }
         } else {
-            finalColourPixel = vec4(densityMapPixel.rgb, 1.0f);
+            if (debugModeEnabled) {
+                finalColourPixel = vec4(1.0, 0.5, 0.0, 1.0f) * vec4(1.0f, 1.0f, 1.0f, densityMapPixel.a * 64.0f);
+            } else {
+                finalColourPixel = vec4(densityMapPixel.rgb, 1.0f);
+            }
         }
     }
     

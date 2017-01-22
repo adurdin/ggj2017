@@ -216,12 +216,9 @@ function love.keypressed(key, unicode)
 end
 
 function love.draw()
+    -- Every frame:
 
-    -- render terrain to a canvas
-    -- love.graphics.setCanvas(terrainDataConavs)
-    -- terrain:draw(0, 0, true)
-    -- love.graphics.setCanvas()
-
+    -- draw the world
     sonarShader:send("sourcePosition", sonarVars.sourcePosition)
     sonarShader:send("radius", sonarVars.radius)
     sonarShader:send("maxTime", sonarVars.maxTime)
@@ -233,12 +230,13 @@ function love.draw()
     sonarShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
     sonarShader:send("debugModeEnabled", debugVars.debugModeEnabled)
 
+    local prevBlendMode = {love.graphics.getBlendMode()}
+    love.graphics.setBlendMode("replace", "premultiplied")
     love.graphics.setShader(sonarShader)
     love.graphics.setCanvas(intermediateCanvas)
-    -- Every frame:
-    -- show an educational image
     love.graphics.setColor(255,255,255,255)
     love.graphics.draw(singelPixelImage, 0, 0, 0, world.WIDTH, world.HEIGHT)
+    love.graphics.setBlendMode(unpack(prevBlendMode))
 
     love.graphics.setCanvas()
     love.graphics.setShader()
