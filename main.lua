@@ -1,4 +1,3 @@
-sonarVars = {}
 debugVars = {}
 
 terrain = {
@@ -19,15 +18,17 @@ screen = {
 }
 
 -- minimum scale fills the height of the screen
-MINIMUM_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
+SCREEN_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
 
 camera = {
     positionX = 0.0, -- world space coordinate that is top left of camera
     positionY = 0.0,
-    scale = MINIMUM_CAMERA_SCALE -- 1.0 is 1 to 1 pixels, 2.0 is double size pixels
+    scale = 1.0 -- 1.0 is 1 to 1 pixels, 2.0 is double size pixels
 }
 
-frameCounter = 0
+level = {}
+level.current = nil
+level.next = nil
 
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -48,6 +49,46 @@ end
 
 function lerp(v1, v2, t)
     return v1 + (v2 - v1) * t
+end
+
+function isCtrlPressed()
+    return (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl"))
+end
+
+function isCmdPressed()
+    return (love.keyboard.isDown("lcmd") or love.keyboard.isDown("rcmd"))
+end
+
+function isAltPressed()
+    return (love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt"))
+end
+
+function setWindow(width, height, fullscreen)
+    local previousX, previousY, display = love.window.getPosition()
+    local previousWidth, previousHeight, previousFlags = love.window.getMode()
+    local desktopWidth, desktopHeight = love.window.getDesktopDimensions(display)
+
+    if width == nil then width = previousWidth end
+    if height == nil then height = previousHeight end
+    if fullscreen == nil then fullscreen = previousFlags.fullscreen end
+
+    -- make sure the window can fit on the screen
+    width = math.min(width, desktopWidth)
+    height = math.min(height, desktopHeight)
+
+    -- set up the window
+    love.window.setMode(width, height, {
+        centered = true,
+        fullscreen = fullscreen,
+        vsync = true,
+        resizable = true,
+        centered = true,
+        borderless = fullscreen,
+        display = display,
+        minwidth = 640,
+        minheight = 480,
+        highdpi = false,
+    })
 end
 
 -- --------------------------------------------------------------------------------------
@@ -102,20 +143,32 @@ end
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 --
--- LOVE CALLBACKS
+-- MENU LEVEL
 
-function love.load()
-    -- enable debugging if required
---    if arg[#arg] == "-debug" then require("mobdebug").start() end
+-- FIXME
+menuLevel = {}
 
-    -- set up the window
-    love.window.setMode(screen.WIDTH, screen.HEIGHT)
+function menuLevel:load()
+end
 
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- GAME LEVEL
+
+gameLevel = {}
+
+function gameLevel:load()
     -- When the game starts:
     -- load an image
-    educational_image = love.graphics.newImage("assets/education.jpg")
-    singelPixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
-
     protestorSheet = love.graphics.newImage("assets/protestors.png")
     
     houseSheet = love.graphics.newImage("assets/houses.png")
@@ -129,21 +182,13 @@ function love.load()
     intermediateCanvas:setWrap("repeat", "clamp")
     intermediateCanvas:setFilter("nearest", "nearest")
 
-    -- load some fonts
-    debugFont = love.graphics.newFont(16)
-
     -- set background colour
     love.graphics.setBackgroundColor(255,255,255)
 
-    sonarVars.sourcePosition = {0.0, 0.0}
-    sonarVars.radius = 0.5
-    sonarVars.maxTime = sonarVars.radius * 10.0
-    sonarVars.currentTime = 0.0
-
-    debugVars.debugModeEnabled = false
-
-    -- set some default values
-    showFPSCounter = true
+    sonar.sourcePosition = {0.0, 0.0}
+    sonar.radius = 0.5
+    sonar.maxTime = sonar.radius * 10.0
+    sonar.currentTime = 0.0
 
     -- create a raster terrain
     terrain:create()
@@ -162,7 +207,7 @@ function love.load()
     end
 end
 
-function love.update(dt)
+function gameLevel:update(dt)
 
     sonar:update(dt)
 
@@ -215,10 +260,11 @@ function love.update(dt)
     end
 end
 
-function love.keypressed(key, unicode)
+function gameLevel:keypressed(key, unicode)
     -- Quit on escape
     if key == "escape" then
-        love.event.quit()
+        -- quit to menu
+        level.next = menuLevel
     end
 
     if love.keyboard.isDown("p") then
@@ -232,24 +278,24 @@ function love.keypressed(key, unicode)
     if not player.isDrilling and key == "space" then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
-        sonarVars.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
-        sonarVars.currentTime = sonarVars.maxTime;
+        sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
+        sonar.currentTime = sonar.maxTime;
     end
 
     -- toggle FPS counter on ctrl+f
-    if key == "f" and (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl")) then
-        showFPSCounter = not showFPSCounter
+    if key == "f" and isCtrlPressed() then
+        debugVars.showFPSCounter = not debugVars.showFPSCounter
     end
 end
 
-function love.draw()
+function gameLevel:draw()
     -- Every frame:
 
     -- draw the world
-    sonarShader:send("sourcePosition", sonarVars.sourcePosition)
-    sonarShader:send("radius", sonarVars.radius)
-    sonarShader:send("maxTime", sonarVars.maxTime)
-    sonarShader:send("currentTime", sonarVars.currentTime)
+    sonarShader:send("sourcePosition", sonar.sourcePosition)
+    sonarShader:send("radius", sonar.radius)
+    sonarShader:send("maxTime", sonar.maxTime)
+    sonarShader:send("currentTime", sonar.currentTime)
     sonarShader:send("densityMap", terrain.image)
     sonarShader:send("WORLD_WIDTH", world.WIDTH)
     sonarShader:send("WORLD_HEIGHT", world.HEIGHT)
@@ -262,7 +308,7 @@ function love.draw()
     love.graphics.setShader(sonarShader)
     love.graphics.setCanvas(intermediateCanvas)
     love.graphics.setColor(255,255,255,255)
-    love.graphics.draw(singelPixelImage, 0, 0, 0, world.WIDTH, world.HEIGHT)
+    love.graphics.draw(singlePixelImage, 0, 0, 0, world.WIDTH, world.HEIGHT)
     love.graphics.setBlendMode(unpack(prevBlendMode))
 
     love.graphics.setCanvas()
@@ -304,22 +350,109 @@ function love.draw()
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
     
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
-    drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
+    drawShader:send("cameraScale", camera.scale * SCREEN_CAMERA_SCALE / fullScreenCorrection)
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
-    
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- LOVE CALLBACKS
+
+function love.load()
+    -- set some default values
+    debugVars.debugFont = love.graphics.newFont(16)
+    debugVars.showFPSCounter = false
+    debugVars.debugModeEnabled = false
+
+    -- set up the window
+    setWindow(screen.WIDTH, screen.HEIGHT, false)
+    singlePixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
+
+    -- load the first level
+    local l = gameLevel
+    level.current = l
+    level.next = nil
+    -- load the new level
+    if l.load then l:load() end
+end
+
+function love.update(dt)
+    if level.next then
+        -- change levels
+        local l1, l2 = level.current, level.next
+        -- quit the old level
+        if l1 then
+            if l1.quit then l1:quit() end
+        end
+        -- swap levels
+        level.current = l2
+        level.next = nil
+        -- load the new level
+        if l2 then
+            if l2.load then l2:load() end
+        end
+    else
+        -- update the current level
+        local l = level.current
+        if l.update then l:update(dt) end
+    end
+end
+
+function love.keypressed(key, unicode)
+    -- toggle fullscreen on alt-enter
+    if key == "return" and isAltPressed then
+        local _, _, flags = love.window.getMode()
+        setWindow(screen.WIDTH, screen.HEIGHT, not flags.fullscreen)
+        return
+    end
+
+    -- quit on ctrl-q or cmd-q
+    if key == "q" and (isCtrlPressed or isCmdPressed) then
+        love.event.quit()
+        return
+    end
+
+    -- pass other keys to the current level
+    local l = level.current
+    if l.keypressed then l:keypressed(key, unicode) end
+end
+
+function love.draw()
+    -- roughly scale to fit the screen
+    local windowWidth, windowHeight, _ = love.window.getMode()
+    screen.WIDTH = windowWidth
+    screen.HEIGHT = windowHeight
+    MINIMUM_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
+    camera.scale = MINIMUM_CAMERA_SCALE
+
+    -- draw the current level
+    local l = level.current
+
+    love.graphics.push()
+    if l.draw then l:draw() end
+    love.graphics.pop()
+
     -- show the fps counter
-    if showFPSCounter then
-        love.graphics.setFont(debugFont)
+    if debugVars.showFPSCounter then
+        love.graphics.push()
+        love.graphics.setFont(debugVars.debugFont)
         love.graphics.setColor(0, 0, 0, 255)
         love.graphics.rectangle("fill", 0, 0, 70, 20)
         love.graphics.setColor(255, 255, 0, 255)
         love.graphics.print("FPS: "..tostring(love.timer.getFPS()), 0, 0)
+        love.graphics.pop()
     end
-
-    love.graphics.setColor(0,0,0,255)
-    love.graphics.print("FRACK THE PLANET!", 300, 10)
 end
 
 -- --------------------------------------------------------------------------------------
@@ -729,9 +862,9 @@ sonar = {}
 
 function sonar:update(dt)
 
-    sonarVars.currentTime = sonarVars.currentTime - dt
-    if sonarVars.currentTime < 0.0 then
-        sonarVars.currentTime = 0.0
+    sonar.currentTime = sonar.currentTime - dt
+    if sonar.currentTime < 0.0 then
+        sonar.currentTime = 0.0
     end
 
 end
@@ -757,11 +890,13 @@ player = {
 }
 
 function player:create()
+
     self.x, self.y = terrain_to_world(0, 0)
     self.vel = 0
     self.direction = 1 -- facing right
     self.rot = 0
     self.trailerRot = 0
+    self.frameCounter = 0
 
     -- drilling
     self.isDrilling = false
@@ -809,7 +944,7 @@ function player:create()
 end
 
 function player:update(dt)
-    frameCounter = frameCounter + 1
+    self.frameCounter = self.frameCounter + 1
 
     -- control inputs
     local retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
@@ -909,7 +1044,7 @@ function player:draw()
     -- draw the drill
     if self.isDrilling then
         -- make it look like the drill is rotating
-        if frameCounter % 5 == 0 then
+        if self.frameCounter % 5 == 0 then
             if self.drillDirection == 1 then
                 self.drillDirection = -1
             else
