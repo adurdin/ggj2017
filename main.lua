@@ -391,6 +391,9 @@ gameLevel = {
 function gameLevel:load()
     -- When the game starts:
 
+    -- random seed
+    gameLevel.seed = (love.math.random() - 0.5) * 10 * 2 * terrain.WIDTH
+
     -- load the hud fonts
     gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 32)
     gameLevel.timerFont = love.graphics.newFont("assets/nullp.ttf", 48)
@@ -841,7 +844,7 @@ function generateTerrainPixel(x, y, r, g, b, a)
     local scale = 3.5
     local scaleX = 1 * scale
     local scaleY = 1.5 * scale
-    local noise = love.math.noise(x / terrain.width * scaleX, y / terrain.height * scaleY)
+    local noise = love.math.noise(x / terrain.width * scaleX + gameLevel.seed, y / terrain.height * scaleY + gameLevel.seed)
     local isDirt = (noise > 0.24)
     -- rgb channels can be used for color data
     -- alpha channel is terrain data and should not be rendered
