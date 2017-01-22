@@ -72,7 +72,11 @@ end
 function world_to_terrain(x, y)
     return
         (x * (terrain.WIDTH / world.WIDTH)),
-        ((y - world.TERRAIN_Y) * (terrain.HEIGHT / world.HEIGHT))
+        ((y - world.TERRAIN_Y) * (terrain.HEIGHT / world.TERRAIN_SIZE))
+end
+
+function terrain_to_world_height(h)
+    return (h * (world.TERRAIN_SIZE / terrain.HEIGHT))
 end
 
 function world_to_view(x, y)
@@ -165,13 +169,36 @@ function love.update(dt)
     -- Every frame:
     hotReload()
 
-    if love.keyboard.isDown("o") then
-        -- wake the central column on space.
-        terrain:wakeColumn(math.floor(terrain.width / 2))
-    end
-
     -- update terrain
     terrain:update(dt)
+
+    -- check to see if player wants to pump
+    if player.isDrilling then
+        -- see if there's a deposit at the drill
+        local canStartPumping = player:canStartPumping()
+        if not previousCanStartPumping and canStartPumping then
+            print("a deposit!")
+            -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
+        end
+        previousCanStartPumping = canStartPumping
+
+        -- see if the player is trying to pump
+        local spacePressed = love.keyboard.isDown("space")
+        if spacePressed and not player.isPumping then
+            if canStartPumping then
+                player:startPumping()
+            else
+                -- TODO: visual or audio feedback that there's nothing to pump here
+            end
+        elseif not spacePressed and player.isPumping then
+            player:cancelPumping()
+        elseif spacePressed and player.isPumping then
+            -- keep pumping while space is held
+            if love.timer.getTime() > player.pumpEndTime then
+                player:finishPumping()
+            end
+        end
+    end
 
     -- update player
     player:update(dt)
@@ -202,20 +229,7 @@ function love.keypressed(key, unicode)
         end
     end
 
-    if key == "i" then
-        -- debug floodfill
-        local x, y = 94, 9 -- test1
-        -- local x, y = 229, 76 -- test2
-        local pixel = {terrain.data:getPixel(x, y)}
-        print("x: "..dump(pixel[1]).." y: "..dump(pixel[2]).." z: "..dump(pixel[3]).." a: "..dump(pixel[4]))
-        local minX, maxX, minY, maxY, pixelCount = terrain:floodfill(x, y, 255, 0, 0, TERRAIN_VOID_ALPHA) -- floodfill with red void
-        print("minX: "..dump(minX).." maxX: "..dump(maxX))
-        print("minY: "..dump(minY).." maxY: "..dump(maxY))
-        print("pixelCount: "..dump(pixelCount))
-        terrain:startCollapse(x)
-    end
-
-    if key == "space" and not player.isDrilling then
+    if not player.isDrilling and key == "space" then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
         sonarVars.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
@@ -561,7 +575,7 @@ function terrain:collapseColumn(x, dt)
     return stayAwake
 end
 
-function terrain:startCollapse(x)
+function terrain:startCollapse(x, minX, maxX, minY, maxY)
     if self.collapsing then
         error("already collapsing")
     end
@@ -611,7 +625,7 @@ function terrain:worldSurface(worldX, vx)
     end
 end
 
-function terrain:floodfill(x, y, r, g, b, a)
+function terrain:floodfill(x, y, a)
     -- floodfill algorithm stolen from the forums
     local Queue={}
     Queue.__index=Queue
@@ -662,15 +676,16 @@ function terrain:floodfill(x, y, r, g, b, a)
     end
 
     local fill
-    function fill(x, y, targetAlpha, r, g, b, a)
+    function fill(x, y, targetAlpha, a)
         if not canFill(x, y, targetAlpha) then
             if Q:size()>0 then
                 x, y=Q:get()
-                return fill(x, y, targetAlpha, r, g, b, a)
+                return fill(x, y, targetAlpha, a)
             else
                 return
             end
         end
+        local r, g, b, _ = self.data:getPixel(x, y)
         self.data:setPixel(x, y, r, g, b, a)
         Q:setSeen(x, y)
         pixelCount = pixelCount + 1
@@ -687,12 +702,12 @@ function terrain:floodfill(x, y, r, g, b, a)
         if canFill(x-1, y, targetAlpha) and not Q:has(x-1, y) then
             Q:put(x-1, y)
         end
-        return fill(x, y-1, targetAlpha, r, g, b, a)
+        return fill(x, y-1, targetAlpha, a)
     end
 
     -- start a floodfill
     local pixel = {self.data:getPixel(x, y)}
-    fill(x, y, pixel[4], r, g, b, a)
+    fill(x, y, pixel[4], a)
 
     return minX, maxX, minY, maxY, pixelCount
 end
@@ -735,9 +750,10 @@ end
 -- PLAYER
 
 player = {
-    DRILL_MAX_DEPTH = 256,
+    DRILL_MAX_DEPTH = terrain_to_world_height(terrain.HEIGHT), -- frackulons
     DRILL_EXTEND_SPEED = 64, -- frackulons/second
     DRILL_RETRACT_SPEED = 128, -- frackulons/second
+    PUMP_RATE = 1000/6, -- terrain units / second; an 1000 unit deposit will take six seconds
 }
 
 function player:create()
@@ -751,6 +767,14 @@ function player:create()
     self.isDrilling = false
     self.drillDepth = 0
     self.drillDirection = 1
+
+    -- pumping
+    self.isPumping = false
+    self.pumpX = 0
+    self.pumpY = 0
+    self.pumpSize = 0
+    self.pumpStartTime = 0
+    self.pumpEndTime = 0
 
     -- player image
     self.image = love.graphics.newImage("assets/fractor.png")
@@ -792,22 +816,26 @@ function player:update(dt)
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
     local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a"))
     local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d"))
+    local spacePressed = love.keyboard.isDown("space")
 
     -- start drilling when the player presses down
-    if extendDrill and self.vel == 0 and not self.isDrilling then
+    if extendDrill and self.vel == 0 and not self.isDrilling and not self.isPumping and not spacePressed then
         self.isDrilling = true
         self.vel = 0
     end
 
-    if self.isDrilling then
-        -- can only move the drill up and down while drilling
+    if self.isDrilling and not self.isPumping and not spacePressed then
+        -- can only move the drill up and down while drilling, and not pumping
         if extendDrill and not retractDrill then
             self:extendDrill(dt)
         elseif not extend and retractDrill then
             self:retractDrill(dt)
         end
+    elseif self.isDrilling and self.isPumping and not spacePressed then
+        -- can't move or drill
+        -- TODO: do pumping sounds or effects or whatever
     else
-        -- can move and ping when not drilling
+        -- can move and ping when not drilling or pumping
         local x = 0
         local newDirection = self.direction
         local directionChanged = false
@@ -878,15 +906,6 @@ function player:draw()
             (self.derrickQuadWidth / 2), self.derrickQuadHeight)
     end
 
-    -- draw the trailer (three copies because of world wrapping)
-    local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
-    for i=1,3 do
-        love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY + 4,
-            self.trailerRot, -- rotation
-            self.direction, 1, -- scale
-            self.trailerQuadWidth, self.trailerQuadHeight)
-    end
-
     -- draw the drill
     if self.isDrilling then
         -- make it look like the drill is rotating
@@ -904,7 +923,16 @@ function player:draw()
         love.graphics.draw(self.drillImage, self.drillBitQuad, self.drillX, self.drillY + self.drillDepth,
             0, -- rotation
             self.drillDirection, 1, -- scale
-            (self.drillBitQuadWidth / 2), 0)
+            (self.drillBitQuadWidth / 2), (self.drillBitQuadHeight / 2))
+    end
+
+    -- draw the trailer (three copies because of world wrapping)
+    local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
+    for i=1,3 do
+        love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY + 4,
+            self.trailerRot, -- rotation
+            self.direction, 1, -- scale
+            self.trailerQuadWidth, self.trailerQuadHeight)
     end
 end
 
@@ -918,6 +946,54 @@ function player:retractDrill(dt)
     if player.drillDepth == 0 then
         player.isDrilling = false
     end
+end
+
+function player:canStartPumping()
+    self.pumpX = self.drillX
+    self.pumpY = self.drillY + self.drillDepth
+    local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
+    tx = math.floor(tx); ty = math.floor(ty)
+    local valid = (tx >= 0 and tx < terrain.WIDTH and ty >= 0 and ty < terrain.HEIGHT)
+    if valid then
+        local _,_,_,a = terrain.data:getPixel(tx, ty)
+        if a == TERRAIN_GAS_ALPHA then
+            return true
+        else
+            return false
+        end
+    else
+        return false
+    end
+end
+
+function player:startPumping()
+    -- floodfill to find the size of the deposit
+    local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
+    tx = math.floor(tx); ty = math.floor(ty)
+    local _,_,_,_,size = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
+    local duration = size / self.PUMP_RATE
+    self.pumpSize = size
+    self.pumpStartTime = love.timer.getTime()
+    self.pumpEndTime = self.pumpStartTime + duration
+    self.isPumping = true
+    print("start pumping, size: "..dump(size).." duration: "..dump(duration))
+end
+
+function player:cancelPumping()
+    self.isPumping = false
+    print("cancel pumping")
+end
+
+function player:finishPumping()
+    local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
+    tx = math.floor(tx); ty = math.floor(ty)
+    local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
+    -- TODO: award points or whatever based on self.pumpSize which is how much we've pumped out
+    self.isPumping = false
+
+    terrain:startCollapse(tx, minX, maxX, minY, maxY)
+
+    print("finish pumping")
 end
 
 -- --------------------------------------------------------------------------------------
