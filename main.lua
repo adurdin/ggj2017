@@ -202,6 +202,19 @@ function love.keypressed(key, unicode)
         end
     end
 
+    if key == "i" then
+        -- debug floodfill
+        local x, y = 94, 9 -- test1
+        -- local x, y = 229, 76 -- test2
+        local pixel = {terrain.data:getPixel(x, y)}
+        print("x: "..dump(pixel[1]).." y: "..dump(pixel[2]).." z: "..dump(pixel[3]).." a: "..dump(pixel[4]))
+        local minX, maxX, minY, maxY, pixelCount = terrain:floodfill(x, y, 255, 0, 0, TERRAIN_VOID_ALPHA) -- floodfill with red void
+        print("minX: "..dump(minX).." maxX: "..dump(maxX))
+        print("minY: "..dump(minY).." maxY: "..dump(maxY))
+        print("pixelCount: "..dump(pixelCount))
+        terrain:startCollapse(x)
+    end
+
     if key == "space" and not player.isDrilling then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
@@ -389,6 +402,7 @@ function terrain:create()
     self.width = self.WIDTH
     self.height = self.HEIGHT
     self.data = love.image.newImageData(self.width, self.height)
+    self.collapsing = false
 
     -- create a terrain and copy it into the second data buffer
     self.data:mapPixel(generateTerrainPixel)
@@ -419,11 +433,17 @@ function terrain:update(dt)
     end
 
     -- collapse each awake column
+    local anyAwake = false
+    local anyStayAwake = false
     for x=0,(self.width-1) do
         if oldAwakeColumns[x] then
+            anyAwake = true
             -- collapse this column
             local stayAwake = self:collapseColumn(x, dt)
             self.awakeColumns[x] = stayAwake
+            if stayAwake then
+                anyStayAwake = true
+            end
 
             -- wake up the columns beside it if it changed
             if stayAwake then
@@ -435,6 +455,10 @@ function terrain:update(dt)
                 end
             end
         end
+    end
+    if anyAwake and not anyStayAwake then
+        self.collapsing = false
+        print("collapse finished")
     end
 
     -- refresh the terrain image from its data
@@ -515,10 +539,16 @@ function terrain:collapseColumn(x, dt)
                 -- Only sky from here up. Save the surface level and fall back to skyfilling
                 self.surface[x] = readY
                 readY = -1
-            else
+            elseif a == TERRAIN_VOID_ALPHA then
                 -- FIXME: later we want to keep track of the size of the void below each pixel maybe,
                 -- so we can look it up without scanning the data again
                 -- but for now do nothing
+            elseif a == TERRAIN_GAS_ALPHA then
+                -- this pixel isn't going to fall
+                -- but pixels above will stop if they hit this one
+                writeY = readY - 1
+            else
+                error("unknown terrain alpha: "..tostring(a))
             end
             readY = readY - 1
         else
@@ -529,6 +559,14 @@ function terrain:collapseColumn(x, dt)
     end
 
     return stayAwake
+end
+
+function terrain:startCollapse(x)
+    if self.collapsing then
+        error("already collapsing")
+    end
+    self.collapsing = true
+    self:wakeColumn(x)
 end
 
 function terrain:wakeColumn(x)
