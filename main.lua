@@ -374,9 +374,15 @@ function gameLevel:update(dt)
     
     -- update camera position
     
-    camera.scale = 2.0
-    camera.positionX = player.x - (screen.WIDTH / 2) / camera.scale
-    camera.positionY = 110
+    if debugVars.cameraControlEnabled then
+        camera.scale = 0.5
+        camera.positionX = player.x - (screen.WIDTH / 2) / camera.scale
+        camera.positionY = 0
+    else
+        camera.scale = 0.6
+        camera.positionX = 50.0
+        camera.positionY = -200.0
+    end
 end
 
 function gameLevel:keypressed(key, unicode)
@@ -391,6 +397,22 @@ function gameLevel:keypressed(key, unicode)
             debugVars.debugModeEnabled = true
         else
             debugVars.debugModeEnabled = false
+        end
+    end
+    
+    if love.keyboard.isDown("r") then
+        if debugVars.polarRenderingEnabled == false then
+            debugVars.polarRenderingEnabled = true
+        else
+            debugVars.polarRenderingEnabled = false
+        end
+    end
+    
+    if love.keyboard.isDown("c") then
+        if debugVars.cameraControlEnabled == false then
+            debugVars.cameraControlEnabled = true
+        else
+            debugVars.cameraControlEnabled = false
         end
     end
 
@@ -468,6 +490,7 @@ function gameLevel:draw()
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
     drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
+    drawShader:send("polarRendering",debugVars.polarRenderingEnabled)
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
@@ -544,6 +567,8 @@ function love.load()
     debugVars.debugFont = love.graphics.newFont(16)
     debugVars.showFPSCounter = false
     debugVars.debugModeEnabled = false
+    debugVars.polarRenderingEnabled = false
+    debugVars.cameraControlEnabled = true
 
     -- set up the window
     setWindow(screen.WIDTH, screen.HEIGHT, false)
