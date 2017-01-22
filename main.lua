@@ -296,14 +296,69 @@ creditsLevel = {}
 
 function creditsLevel:load()
     -- load credits sprites
+    self.titleSize = 24
+    self.nameSize = 32
+    self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
+    self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+    self.titleColor = {32, 192, 255, 255}
+    self.nameColor = {255, 255, 255, 255}
+    self.shadowColor = {64, 64, 64, 255}
+    self.scrollY = screen.HEIGHT
+end
+
+function creditsLevel:printTitle(text, y)
+    love.graphics.setFont(self.titleFont)
+    printCenteredShadowedText(text, y, self.titleColor, self.shadowColor)
+    return y + self.titleSize
+end
+
+function creditsLevel:printName(text, y)
+    love.graphics.setFont(self.nameFont)
+    printCenteredShadowedText(text, y, self.nameColor, self.shadowColor)
+    return y + self.nameSize
+end
+
+function creditsLevel:blankLine(y)
+    return y + self.titleSize
 end
 
 function creditsLevel:draw()
-    love.graphics.setFont(debugVars.debugFont)
+    y = self.scrollY
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
-    love.graphics.setColor(0, 255, 0, 255)
-    love.graphics.print("TODO: credits", 0, 0)
+
+    y = self:printTitle("Team Wrangling / First Casualty", y)
+    y = self:printName("Aaron Dron", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Civil & Industrial Engineering", y)
+    y = self:printName("Aidan Dodds", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Geological Subduction", y)
+    y = self:printName("Andy Durdin", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Crowd Control", y)
+    y = self:printName("David Farrell", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Seismic Imaging", y)
+    y = self:printName("Gordon Brown", y)
+    y = self:blankLine(y)
+
+    y = self:printTitle("Infrastructure / Second Casualty", y)
+    y = self:printName("Luke Drummond", y)
+    y = self:blankLine(y)
+
+    y = y + 200
+
+    y = self:printTitle("Intrepid Polar Expedition", y)
+    y = self:printName("Gordon Brown, David Farrell, Aidan Dodds", y)
+
+    if y < 0 then
+        level.next = menuLevel
+    end
 end
 
 function creditsLevel:keypressed(key)
@@ -312,7 +367,8 @@ function creditsLevel:keypressed(key)
     end
 end
 
-function creditsLevel:update()
+function creditsLevel:update(dt)
+    self.scrollY = self.scrollY - 50 * dt
 end
 
 -- --------------------------------------------------------------------------------------
