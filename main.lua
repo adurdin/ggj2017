@@ -43,6 +43,12 @@ level.next = nil
 --
 -- UTILITY FUNCTIONS
 
+function toCurrency(number)
+    local i, j, minus, int, fraction = tostring(number):find('([-]?)(%d+)([.]?%d*)')
+    int = int:reverse():gsub("(%d%d%d)", "%1,")
+    return minus .. int:reverse():gsub("^,", "") .. fraction
+end
+
 function clamp(min, val, max)
     return math.max(min, math.min(val, max))
 end
@@ -541,6 +547,13 @@ function love.draw()
     if l.draw then l:draw() end
     love.graphics.pop()
 
+    -- show the player score
+    love.graphics.push()
+    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setColor(0, 0, 0, 255)
+    love.graphics.print("Score: $"..toCurrency(player.score)..",000,000", 20, 20)
+    love.graphics.pop()
+
     -- show the fps counter
     if debugVars.showFPSCounter then
         love.graphics.push()
@@ -991,7 +1004,6 @@ player = {
 }
 
 function player:create()
-
     self.x, self.y = terrain_to_world(0, 0)
     self.trailerX, self.trailerY = 0, 0
     self.derrickX, self.derrickY = 0, 0
@@ -1000,6 +1012,7 @@ function player:create()
     self.rot = 0
     self.trailerRot = 0
     self.frameCounter = 0
+    self.score = 0
 
     -- drilling
     self.isDrilling = false
@@ -1239,7 +1252,7 @@ function player:finishPumping()
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
     tx = math.floor(tx); ty = math.floor(ty)
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
-    -- TODO: award points or whatever based on self.pumpSize which is how much we've pumped out
+    self.score = self.score + self.pumpSize
     self.isPumping = false
 
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
