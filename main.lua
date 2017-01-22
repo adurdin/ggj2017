@@ -535,9 +535,25 @@ function gameLevel:update(dt)
         camera.positionX = player.x - (screen.WIDTH / 2.0) / camera.scale
         camera.positionY = 100.0
     else
-        camera.scale = 0.6
-        camera.positionX = 50.0
-        camera.positionY = -200.0
+      if false then
+        if love.keyboard.isDown("insert") then
+            camera.scale = camera.scale + 0.01
+        elseif love.keyboard.isDown("delete") then
+            camera.scale = camera.scale - 0.01
+        elseif love.keyboard.isDown("home") then
+            camera.positionX = camera.positionX + 5
+        elseif love.keyboard.isDown("end") then
+            camera.positionX = camera.positionX - 5
+        elseif love.keyboard.isDown("pageup") then
+            camera.positionY = camera.positionY + 5
+        elseif love.keyboard.isDown("pagedown") then
+            camera.positionY = camera.positionY - 5
+        end
+        print(" s: "..dump(camera.scale).." x: "..dump(camera.positionX).." y: "..dump(camera.positionY))
+        end
+        camera.scale = 1.3
+        camera.positionX = 420.0
+        camera.positionY = -245.0
     end
 end
 
@@ -569,6 +585,9 @@ function gameLevel:keypressed(key, unicode)
             debugVars.cameraControlEnabled = true
         else
             debugVars.cameraControlEnabled = false
+            camera.scale = 1.0
+            camera.positionX = 0.0
+            camera.positionY = 0.0
         end
     end
 
@@ -647,11 +666,16 @@ function gameLevel:draw()
         if people[x].alive then people[x]:draw() end
     end
     
+    -- hack starting rotation
+    local startingRotation = 4.6 -- math.pi * 3 / 4
+    local playerRotation = player.x / world.WIDTH * 2 * math.pi
+    
     -- draw game world to screen
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
     drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
     drawShader:send("polarRendering",debugVars.polarRenderingEnabled)
+    drawShader:send("polarRotation", (startingRotation + playerRotation) / (math.pi * 2))
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
@@ -734,8 +758,8 @@ function love.load()
     debugVars.debugFont = love.graphics.newFont(16)
     debugVars.showFPSCounter = false
     debugVars.debugModeEnabled = false
-    debugVars.polarRenderingEnabled = false
-    debugVars.cameraControlEnabled = true
+    debugVars.polarRenderingEnabled = true
+    debugVars.cameraControlEnabled = false
 
     -- set up the window
     setWindow(screen.WIDTH, screen.HEIGHT, false)
