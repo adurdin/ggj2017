@@ -50,7 +50,11 @@ sounds = {
     splat   = {"assets/sounds/splat.wav",   nil, false},
     colapse = {"assets/sounds/colapse.wav", nil, false},
     deposit = {"assets/sounds/deposit.wav", nil, false},
-    drill   = {"assets/sounds/drill.wav",   nil, true}
+    coin    = {"assets/sounds/coin.wav",    nil, false},
+    drill_up   = {"assets/sounds/drill_up.wav",   nil, false},
+    drill_down = {"assets/sounds/drill_down.wav", nil, false},
+    pumping    = {"assets/sounds/pumping.wav", nil, false},
+    suck    = {"assets/sounds/suck.wav", nil, true}
 }
 
 function soundLoad()
@@ -1352,6 +1356,11 @@ end
 function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
+    -- make 'ch'ching' noises
+    if self.isPumping and love.math.random(25) == 1 then
+        soundEmit("coin")
+    end
+
     -- control inputs
     local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w"))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
@@ -1514,11 +1523,21 @@ function player:draw()
 end
 
 function player:extendDrill(dt)
+  
+    soundStop("drill_up")
+    soundEmit("drill_down")
+
     player.isDrilling = true
     player.drillDepth = math.min(player.drillDepth + (player.DRILL_EXTEND_SPEED * dt), player.DRILL_MAX_DEPTH)
 end
 
 function player:retractDrill(dt)
+  
+    
+    soundStop("drill_down")
+    soundEmit("drill_up")
+  
+  
     player.drillDepth = math.max(0, player.drillDepth - (player.DRILL_RETRACT_SPEED * dt))
     if player.drillDepth == 0 then
         player.isDrilling = false
@@ -1545,6 +1564,10 @@ function player:canStartPumping()
 end
 
 function player:startPumping()
+  
+    soundEmit("pumping")
+    soundEmit("suck")
+  
     -- floodfill to find the size of the deposit
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
     tx = math.floor(tx); ty = math.floor(ty)
@@ -1559,15 +1582,22 @@ function player:startPumping()
 end
 
 function player:cancelPumping()
+    soundStop("suck")
     self.isPumping = false
     print("cancel pumping")
 end
 
+function player:addScore(value)
+    self.score = self.score + self.pumpScore
+    soundEmit("coin")
+end
+
 function player:finishPumping()
+    soundStop("suck")
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
     tx = math.floor(tx); ty = math.floor(ty)
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
-    self.score = self.score + self.pumpScore
+    self:addScore(self.pumpScore)
     self.isPumping = false
     self.autoRetracting = true
 
