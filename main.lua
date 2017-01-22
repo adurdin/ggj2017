@@ -561,7 +561,13 @@ function gameLevel:draw()
     love.graphics.push()
     love.graphics.setFont(gameLevel.scoreFont)
     local text = "$"..toCurrency(math.floor(player.drawScore))
-    printCenteredShadowedText(text, 10, {0, 0, 0, 255}, {255, 255, 255, 192})
+    local textColor
+    if player.drawScore < 0 then
+        textColor = {200, 32, 16, 255}
+    else
+        textColor = {0, 0, 0, 255}
+    end
+    printCenteredShadowedText(text, 10, textColor, {255, 255, 255, 192})
     love.graphics.pop()
 
     -- draw game time remaining
