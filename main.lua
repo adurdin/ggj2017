@@ -367,7 +367,7 @@ function gameLevel:update(dt)
 
     -- update people
     for x=0,(people.COUNT-1) do
-        people[x]:update(dt)
+        if people[x].alive then people[x]:update(dt) end
     end
     
     if houses then
@@ -465,7 +465,7 @@ function gameLevel:draw()
     
     -- draw people folk
     for x=0,(people.COUNT-1) do
-        people[x]:draw()
+        if people[x].alive then people[x]:draw() end
     end
     
     -- draw game world to screen
@@ -1442,6 +1442,7 @@ people = {
 function createPerson()
     local person = {}
     person.x = love.math.random(0, world.WIDTH)
+    person.alive = true
     person.target = person.x
     person.anger = love.math.random(0, 1)
     person.accumulator = 0
@@ -1452,7 +1453,9 @@ function createPerson()
     function person:update(dt)
         -- run away
         local diff = player.x - self.x
-        if math.abs(diff) < 30 then
+        if math.abs(diff) < 22 and (math.abs(player.vel) - math.abs(diff)) > 0 then
+            self.alive = false
+        elseif math.abs(diff) < 30 then
             self.target = player.x - diff * 5
         end
         -- new target
