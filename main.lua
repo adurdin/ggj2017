@@ -144,6 +144,14 @@ function setWindow(width, height, fullscreen)
     })
 end
 
+function printCenteredShadowedText(text, y, color, shadowColor)
+    local offset = 2
+    love.graphics.setColor(shadowColor[1], shadowColor[2], shadowColor[3], shadowColor[4])
+    love.graphics.printf(text, offset, y+offset, screen.WIDTH, "center")
+    love.graphics.setColor(color[1], color[2], color[3], color[4])
+    love.graphics.printf(text, 0, y, screen.WIDTH, "center")
+end
+
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -322,6 +330,11 @@ gameLevel = {
 
 function gameLevel:load()
     -- When the game starts:
+
+    -- load the hud fonts
+    gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 32)
+    gameLevel.timerFont = love.graphics.newFont("assets/nullp.ttf", 48)
+
     -- load an image
     protestorSheet = love.graphics.newImage("assets/protestors.png")
     protestorSheet:setFilter("nearest", "nearest")
@@ -434,7 +447,7 @@ function gameLevel:update(dt)
     
     camera.scale = 2.0
     camera.positionX = player.x - (screen.WIDTH / 2) / camera.scale
-    camera.positionY = 110
+    camera.positionY = 100
 end
 
 function gameLevel:keypressed(key, unicode)
@@ -536,17 +549,17 @@ function gameLevel:draw()
 
     -- show the player score
     love.graphics.push()
-    love.graphics.setFont(debugVars.debugFont)
-    love.graphics.setColor(0, 0, 0, 255)
-    love.graphics.print("Score: $"..toCurrency(player.score), 20, 20)
+    love.graphics.setFont(gameLevel.scoreFont)
+    local text = "$"..toCurrency(player.score)
+    printCenteredShadowedText(text, 10, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
 
     -- draw game time remaining
     love.graphics.push()
-    love.graphics.setFont(debugVars.debugFont)
-    love.graphics.setColor(0, 0, 0, 255)
+    love.graphics.setFont(gameLevel.timerFont)
     local secondsLeft = math.floor(gameLevel.timeRemaining)
-    love.graphics.print("Time left: "..tostring(secondsLeft), 20, 40)
+    local text = tostring(secondsLeft)
+    printCenteredShadowedText(text, 40, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
 end
 
