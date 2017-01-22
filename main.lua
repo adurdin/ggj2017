@@ -752,19 +752,26 @@ function player:create()
     self.drillDepth = 0
     self.drillDirection = 1
 
-    -- sprites
+    -- player image
     self.image = love.graphics.newImage("assets/fractor.png")
     self.image:setFilter("nearest", "nearest")
     self.image:setWrap("clampzero", "clampzero")
     local imageWidth, imageHeight = self.image:getDimensions()
+
+    -- player sprite
     self.playerQuad = love.graphics.newQuad(
         41, 1, -- subimage x, y
         54, 47, -- subimage width, height
         imageWidth, imageHeight) -- image width, height
     __, __, self.playerQuadWidth, self.playerQuadHeight = self.playerQuad:getViewport()
 
-    self.trailerQuad = love.graphics.newQuad(2, 1, 35, 47, imageWidth, imageHeight)
+    -- trailer sprite
+    self.trailerQuad = love.graphics.newQuad(2, 41, 35, 7, imageWidth, imageHeight)
     __, __, self.trailerQuadWidth, self.trailerQuadHeight = self.trailerQuad:getViewport()
+
+    -- derrick sprite
+    self.derrickQuad = love.graphics.newQuad(2, 1, 35, 40, imageWidth, imageHeight)
+    __, __, self.derrickQuadWidth, self.derrickQuadHeight = self.derrickQuad:getViewport()
 
     -- drill sprites
     self.drillImage = love.graphics.newImage("assets/drill.png")
@@ -841,9 +848,13 @@ function player:update(dt)
     self.trailerY, nx, ny = terrain:worldSurface(self.trailerX, 5)
     self.trailerRot = lerp(self.trailerRot, -math.atan2(nx, ny), 0.1)
 
+    -- put the derrick on the trailer
+    self.derrickX = (self.trailerX - self.direction * (self.trailerQuadWidth / 2) * math.cos(self.trailerRot)) % world.WIDTH
+    self.derrickY = (self.trailerY - self.direction * (self.trailerQuadWidth / 2) * math.sin(self.trailerRot))
+
     -- put the drill in the trailer
-    self.drillX = (self.trailerX - self.direction * math.floor(self.trailerQuadWidth / 2)) % world.WIDTH
-    self.drillY = terrain:worldSurface(self.drillX)
+    self.drillX = self.derrickX
+    self.drillY = self.derrickY
 end
 
 function player:draw()
@@ -858,18 +869,27 @@ function player:draw()
             (self.playerQuadWidth / 2), self.playerQuadHeight)
     end
 
+    -- draw the derrick (three copies because of world wrapping)
+    local xs = {self.derrickX, self.derrickX - world.WIDTH, self.derrickX + world.WIDTH}
+    for i=1,3 do
+        love.graphics.draw(self.image, self.derrickQuad, xs[i], self.derrickY,
+            0, -- rotation
+            self.direction, 1, -- scale
+            (self.derrickQuadWidth / 2), self.derrickQuadHeight)
+    end
+
     -- draw the trailer (three copies because of world wrapping)
     local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
     for i=1,3 do
         love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY + 4,
             self.trailerRot, -- rotation
             self.direction, 1, -- scale
-            self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
+            self.trailerQuadWidth, self.trailerQuadHeight)
     end
 
     -- draw the drill
-
-    if self.drillDepth > 0 then
+    if self.isDrilling then
+        -- make it look like the drill is rotating
         if frameCounter % 5 == 0 then
             if self.drillDirection == 1 then
                 self.drillDirection = -1
@@ -878,7 +898,7 @@ function player:draw()
             end
         end
         love.graphics.draw(self.drillImage, self.drillShaftQuad, self.drillX, self.drillY,
-            self.trailerRot, -- rotation
+            0, -- rotation
             self.drillDirection, self.drillDepth / self.drillShaftQuadHeight, -- scale
             (self.drillShaftQuadWidth / 2), 0)
         love.graphics.draw(self.drillImage, self.drillBitQuad, self.drillX, self.drillY + self.drillDepth,
