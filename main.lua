@@ -41,6 +41,40 @@ level.next = nil
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 --
+-- SOUND
+
+sounds = {
+    coin = {"assets/sounds/test1.wav", nil}
+}
+
+function soundLoad()
+    for key, value in pairs(sounds) do
+        local path = value[1]
+        sounds[key][1] = love.audio.newSource(path, "static")
+        if not sounds[key][1] then
+            print("unable to load " .. path)
+        end
+    end
+end
+
+function soundEmit(name)
+    local sound = sounds[name]
+    if sound then
+        print(name)
+    end
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
 -- UTILITY FUNCTIONS
 
 function toCurrency(number)
@@ -290,6 +324,9 @@ function gameLevel:load()
     intermediateCanvas = love.graphics.newCanvas(world.WIDTH, world.HEIGHT)
     intermediateCanvas:setWrap("repeat", "clamp")
     intermediateCanvas:setFilter("nearest", "nearest")
+
+    -- load all of the sounds we can
+    soundLoad()
 
     -- set background colour
     love.graphics.setBackgroundColor(255,255,255)
