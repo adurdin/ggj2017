@@ -1000,7 +1000,6 @@ function player:create()
     self.rot = 0
     self.trailerRot = 0
     self.frameCounter = 0
-    self.trailerX = 0
 
     -- drilling
     self.isDrilling = false
@@ -1111,10 +1110,20 @@ function player:update(dt)
     self.rot = lerp(self.rot, -math.atan2(nx, ny), 0.1)
 
     -- put the trailer behind us
-    local newTrailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
-    local limit = dt * 100
-    self.trailerX = (self.trailerX + clamp(-limit, newTrailerX % world.WIDTH - self.trailerX, limit))
-    self.trailerY = terrain:worldSurface(self.trailerX)
+
+    -- FIXME: lerping the trailer looks nicer, but right now has a bug when the trailer and player
+    -- are on opposite sides of the wrapped edge of the world
+    local lerpBugFixed = false
+    if lerpBugFixed then
+        -- lerp
+        local newTrailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
+        local limit = dt * 100
+        self.trailerX = (self.trailerX + clamp(-limit, newTrailerX % world.WIDTH - self.trailerX, limit))
+        self.trailerY = terrain:worldSurface(self.trailerX)
+    else
+        -- just flip, don't lerp
+        self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
+    end
     self.trailerY, nx, ny = terrain:worldSurface(self.trailerX, 5)
     self.trailerRot = lerp(self.trailerRot, -math.atan2(nx, ny), 0.1)
 
