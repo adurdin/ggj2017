@@ -731,7 +731,7 @@ function player:draw()
     -- draw the fractor (three copies because of world wrapping)
     local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
     for i=1,3 do
-        love.graphics.draw(self.image, self.playerQuad, xs[i], self.y,
+        love.graphics.draw(self.image, self.playerQuad, xs[i], self.y + 4,
             self.rot, -- rotation
             self.direction, 1, -- scale
             (self.playerQuadWidth / 2), self.playerQuadHeight)
@@ -740,7 +740,7 @@ function player:draw()
     -- draw the trailer (three copies because of world wrapping)
     local xs = {self.trailerX, self.trailerX - world.WIDTH, self.trailerX + world.WIDTH}
     for i=1,3 do
-        love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY,
+        love.graphics.draw(self.image, self.trailerQuad, xs[i], self.trailerY + 4,
             self.trailerRot, -- rotation
             self.direction, 1, -- scale
             self.trailerQuadWidth, self.trailerQuadHeight) -- fixme: offset is wrong
