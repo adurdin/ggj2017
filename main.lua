@@ -451,7 +451,7 @@ function gameLevel:load()
     love.graphics.setBackgroundColor(255,255,255)
 
     sonar.sourcePosition = {0.0, 0.0}
-    sonar.radius = 0.5
+    sonar.radius = 0.3
     sonar.maxTime = sonar.radius * 10.0
     sonar.currentTime = 0.0
 
