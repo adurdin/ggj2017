@@ -977,7 +977,8 @@ end
 
 function terrain:startCollapse(x, minX, maxX, minY, maxY)
     if self.collapsing then
-        error("already collapsing")
+        print("error already collapsing. ignore it")
+        return
     end
     self.collapsing = true
     self:wakeColumn(x)
