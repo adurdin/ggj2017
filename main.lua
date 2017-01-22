@@ -23,7 +23,8 @@ SCREEN_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
 camera = {
     positionX = 0.0, -- world space coordinate that is top left of camera
     positionY = 0.0,
-    scale = 1.0 -- 1.0 is 1 to 1 pixels, 2.0 is double size pixels
+    scale = 1.0, -- 1.0 is 1 to 1 pixels, 2.0 is double size pixels
+    shake
 }
 
 level = {}
@@ -360,6 +361,10 @@ function gameLevel:update(dt)
             value:update()
         end
     end
+    
+    -- update camera position
+    
+    camera.positionX = player.x - (screen.WIDTH / 2)
 end
 
 function gameLevel:keypressed(key, unicode)
