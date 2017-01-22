@@ -1509,6 +1509,7 @@ function createPerson()
         local diff = player.x - self.x
         if math.abs(diff) < 22 and (math.abs(player.vel) - math.abs(diff)) > 0 then
             self.alive = false
+            player.score = player.score - 17 * 1754362
         elseif math.abs(diff) < 30 then
             self.target = player.x - diff * 5
         end
