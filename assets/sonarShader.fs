@@ -29,7 +29,7 @@ vec2 world_to_terrain(vec2 p) {
 vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
 {
     vec4 COLOUR_BLACK = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    vec4 COLOUR_SKY = vec4(0.0f, 0.55f, 0.99f, 1.0f);
+    vec4 COLOUR_SKY = vec4(0.0f, 0.5490196078f, 1.0f, 1.0f);
     vec4 COLOUR_DIRT = vec4(0.4823529412f, 0.2705882353f, 0.09019607843f, 1.0f);
 
     /* transforms texture coordinates for density map */
