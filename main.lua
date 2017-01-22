@@ -18,10 +18,13 @@ screen = {
   HEIGHT = 600
 }
 
+-- minimum scale fills the height of the screen
+MINIMUM_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
+
 camera = {
-    positionX = 0.0,
+    positionX = 0.0, -- world space coordinate that is top left of camera
     positionY = 0.0,
-    scale = 1.0
+    scale = MINIMUM_CAMERA_SCALE -- 1.0 is 1 to 1 pixels, 2.0 is double size pixels
 }
 
 frameCounter = 0
@@ -115,6 +118,8 @@ function love.load()
     drawShader = love.graphics.newShader("assets/drawShader.fs")
 
     intermediateCanvas = love.graphics.newCanvas(world.WIDTH, world.HEIGHT)
+    intermediateCanvas:setWrap("repeat", "clamp")
+    intermediateCanvas:setFilter("nearest", "nearest")
 
     -- load some fonts
     debugFont = love.graphics.newFont(16)
@@ -228,30 +233,34 @@ function love.draw()
     player:draw()
     love.graphics.setCanvas()
 
-    love.graphics.setCanvas(intermediateCanvas)
-    love.graphics.setColor(255, 0, 0, 255)
-    love.graphics.rectangle("fill", 5, 5, 45, 45)
-    love.graphics.setColor(0, 255, 0, 255)
-    love.graphics.rectangle("fill", 1390, 5, 45, 45)
-    love.graphics.setColor(0, 0, 255, 255)
-    love.graphics.rectangle("fill", 5, 450, 45, 45)
-    love.graphics.setColor(255, 255, 0, 255)
-    love.graphics.rectangle("fill", 1390, 450, 45, 45)
-    love.graphics.setCanvas()
-
+    -- diplay rectangles in corners of world space
+    if debugVars.debugModeEnabled then
+        love.graphics.setCanvas(intermediateCanvas)
+        love.graphics.setColor(255, 0, 0, 255)
+        love.graphics.rectangle("fill", 5, 5, 45, 45)
+        love.graphics.setColor(0, 255, 0, 255)
+        love.graphics.rectangle("fill", 1390, 5, 45, 45)
+        love.graphics.setColor(0, 0, 255, 255)
+        love.graphics.rectangle("fill", 5, 450, 45, 45)
+        love.graphics.setColor(255, 255, 0, 255)
+        love.graphics.rectangle("fill", 1390, 450, 45, 45)
+        love.graphics.setCanvas()
+    end
+    
     -- final draw
-    aspectRatioScale = screen.HEIGHT / world.HEIGHT
     
     for x=0,(people.COUNT-1) do
         people[x]:draw()
     end
     
-    drawShader:send("cameraPosition", {camera.positionX, camera.positionY})
-    drawShader:send("cameraScale", camera.scale)
+    local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
+    
+    drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
+    drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
     love.graphics.setShader(drawShader)
-    love.graphics.draw(intermediateCanvas, 0, 0, 0, aspectRatioScale, aspectRatioScale)
+    love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
-
+    
     -- show the fps counter
     if showFPSCounter then
         love.graphics.setFont(debugFont)
