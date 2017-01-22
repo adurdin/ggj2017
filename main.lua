@@ -1360,7 +1360,7 @@ function player:update(dt)
 
     -- make 'ch'ching' noises
     if self.isPumping and love.math.random(25) == 1 then
-        soundEmit("coin")
+        self:addScore(love.math.random() * 1000)
     end
 
     -- control inputs
@@ -1590,7 +1590,7 @@ function player:cancelPumping()
 end
 
 function player:addScore(value)
-    self.score = self.score + self.pumpScore
+    self.score = self.score + value
     soundEmit("coin")
 end
 
