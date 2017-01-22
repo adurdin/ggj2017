@@ -44,7 +44,8 @@ level.next = nil
 -- SOUND
 
 sounds = {
-    test = {"assets/sounds/test1.wav", nil}
+    test = {"assets/sounds/test1.wav", nil},
+    sonar = {"assets/sounds/sonar.wav", nil}
 }
 
 function soundLoad()
@@ -470,6 +471,7 @@ function gameLevel:keypressed(key, unicode)
         screenHeight = love.graphics.getHeight()
         sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
         sonar.currentTime = sonar.maxTime;
+        soundEmit("sonar")
     end
 
     -- toggle FPS counter on ctrl+f
