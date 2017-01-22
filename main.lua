@@ -461,6 +461,13 @@ function gameLevel:draw()
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
+
+    -- show the player score
+    love.graphics.push()
+    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setColor(0, 0, 0, 255)
+    love.graphics.print("Score: $"..toCurrency(player.score)..",000,000", 20, 20)
+    love.graphics.pop()
 end
 
 -- --------------------------------------------------------------------------------------
@@ -550,13 +557,6 @@ function love.draw()
 
     love.graphics.push()
     if l.draw then l:draw() end
-    love.graphics.pop()
-
-    -- show the player score
-    love.graphics.push()
-    love.graphics.setFont(debugVars.debugFont)
-    love.graphics.setColor(0, 0, 0, 255)
-    --love.graphics.print("Score: $"..toCurrency(player.score)..",000,000", 20, 20)
     love.graphics.pop()
 
     -- show the fps counter
