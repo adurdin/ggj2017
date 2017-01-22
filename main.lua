@@ -556,7 +556,7 @@ function love.draw()
     love.graphics.push()
     love.graphics.setFont(debugVars.debugFont)
     love.graphics.setColor(0, 0, 0, 255)
-    love.graphics.print("Score: $"..toCurrency(player.score)..",000,000", 20, 20)
+    --love.graphics.print("Score: $"..toCurrency(player.score)..",000,000", 20, 20)
     love.graphics.pop()
 
     -- show the fps counter
