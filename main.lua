@@ -277,6 +277,8 @@ function gameLevel:load()
     -- When the game starts:
     -- load an image
     protestorSheet = love.graphics.newImage("assets/protestors.png")
+    protestorSheet:setFilter("nearest", "nearest")
+    protestorSheet:setWrap("clamp", "clamp")
 
     houseSheet = love.graphics.newImage("assets/houses.png")
     houseSheet:setFilter("nearest", "nearest")
