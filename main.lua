@@ -1456,7 +1456,7 @@ end
 houses = {}
 
 houseData = {
-    REQUIRED = 64,
+    REQUIRED = 20,
     COUNT = 8,
     prefab = {
         0, 0, 32, 48,
@@ -1475,7 +1475,7 @@ function createHouse()
 
     function house:spawn()
         house.x = love.math.random(0, world.WIDTH)
-        local pick = math.floor(love.math.random(houseData.COUNT-1) * 4)
+        local pick = math.floor(love.math.random(houseData.COUNT) - 1) * 4
         house.width = houseData.prefab[pick + 3]
         house.height = houseData.prefab[pick + 4]
         assert (houseSheet)
