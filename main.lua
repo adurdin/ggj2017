@@ -145,10 +145,109 @@ end
 --
 -- MENU LEVEL
 
--- FIXME
 menuLevel = {}
 
 function menuLevel:load()
+    -- load menu graphics
+end
+
+function menuLevel:draw()
+    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setBackgroundColor(0, 0, 0, 255)
+    love.graphics.clear()
+    love.graphics.setColor(255, 0, 0, 255)
+    love.graphics.print("FRACK THE PLANET", 0, 0)
+    love.graphics.print("SPACE to play", 0, 32)
+    love.graphics.print("H for help", 0, 48)
+    love.graphics.print("C for credits", 0, 64)
+    love.graphics.print("Q to quit", 0, 80)
+end
+
+function menuLevel:keypressed(key)
+    if key == "space" or key == "enter" then
+        level.next = gameLevel
+    elseif key == "h" then
+        level.next = helpLevel
+    elseif key == "c" then
+        level.next = creditsLevel
+    elseif key == "q" or key == "escape" then
+        love.event.quit()
+    end
+end
+
+function menuLevel:update()
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- HELP LEVEL
+
+helpLevel = {}
+
+function helpLevel:load()
+    -- load help graphics
+end
+
+function helpLevel:draw()
+    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setBackgroundColor(0, 0, 0, 255)
+    love.graphics.clear()
+    love.graphics.setColor(0, 255, 255, 255)
+    love.graphics.print("TODO: help", 0, 0)
+end
+
+function helpLevel:keypressed(key)
+    if key == "space" or key == "escape" or key == "return" then
+        level.next = menuLevel
+    end
+end
+
+function helpLevel:update()
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- MENU LEVEL
+
+creditsLevel = {}
+
+function creditsLevel:load()
+    -- load credits sprites
+end
+
+function creditsLevel:draw()
+    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setBackgroundColor(0, 0, 0, 255)
+    love.graphics.clear()
+    love.graphics.setColor(0, 255, 0, 255)
+    love.graphics.print("TODO: credits", 0, 0)
+end
+
+function creditsLevel:keypressed(key)
+    if key == "space" or key == "escape" or key == "return" then
+        level.next = menuLevel
+    end
+end
+
+function creditsLevel:update()
 end
 
 -- --------------------------------------------------------------------------------------
@@ -210,9 +309,6 @@ end
 function gameLevel:update(dt)
 
     sonar:update(dt)
-
-    -- Every frame:
-    hotReload()
 
     -- update terrain
     terrain:update(dt)
@@ -380,7 +476,7 @@ function love.load()
     singlePixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
 
     -- load the first level
-    local l = gameLevel
+    local l = menuLevel
     level.current = l
     level.next = nil
     -- load the new level
@@ -388,6 +484,8 @@ function love.load()
 end
 
 function love.update(dt)
+    hotReload()
+
     if level.next then
         -- change levels
         local l1, l2 = level.current, level.next
@@ -895,6 +993,8 @@ player = {
 function player:create()
 
     self.x, self.y = terrain_to_world(0, 0)
+    self.trailerX, self.trailerY = 0, 0
+    self.derrickX, self.derrickY = 0, 0
     self.vel = 0
     self.direction = 1 -- facing right
     self.rot = 0
