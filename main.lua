@@ -13,6 +13,7 @@ world = {
 }
 
 screen = {
+    -- NOTE: on andy's macbook, use 1680x1050 for fullscreen
   WIDTH = 800,
   HEIGHT = 600
 }
@@ -49,7 +50,12 @@ sounds = {
     splat   = {"assets/sounds/splat.wav",   nil, false},
     colapse = {"assets/sounds/colapse.wav", nil, false},
     deposit = {"assets/sounds/deposit.wav", nil, false},
-    drill   = {"assets/sounds/drill.wav",   nil, true}
+    coin    = {"assets/sounds/coin.wav",    nil, false},
+    drill_up   = {"assets/sounds/drill_up.wav",   nil, false},
+    drill_down = {"assets/sounds/drill_down.wav", nil, false},
+    pumping    = {"assets/sounds/pumping.wav", nil, false},
+    suck    = {"assets/sounds/suck.wav", nil, true},
+    music   = {"assets/music.ogg", nil, true}
 }
 
 function soundLoad()
@@ -64,6 +70,7 @@ function soundLoad()
             src:setLooping(loop)
         end
     end
+    soundEmit("music", 0.5, 1.0)
 end
 
 function soundEmit(name, vol, pitch)
@@ -164,12 +171,13 @@ function setWindow(width, height, fullscreen)
     })
 end
 
-function printCenteredShadowedText(text, y, color, shadowColor)
+function printCenteredShadowedText(text, x, y, color, shadowColor)
     local offset = 2
+    local halfWidth = screen.WIDTH / 2
     love.graphics.setColor(shadowColor[1], shadowColor[2], shadowColor[3], shadowColor[4])
-    love.graphics.printf(text, offset, y+offset, screen.WIDTH, "center")
+    love.graphics.printf(text, x - halfWidth + offset, y + offset, halfWidth * 2, "center")
     love.graphics.setColor(color[1], color[2], color[3], color[4])
-    love.graphics.printf(text, 0, y, screen.WIDTH, "center")
+    love.graphics.printf(text, x - halfWidth, y, halfWidth * 2, "center")
 end
 
 -- --------------------------------------------------------------------------------------
@@ -325,13 +333,13 @@ end
 
 function creditsLevel:printTitle(text, y)
     love.graphics.setFont(self.titleFont)
-    printCenteredShadowedText(text, y, self.titleColor, self.shadowColor)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.titleColor, self.shadowColor)
     return y + self.titleSize
 end
 
 function creditsLevel:printName(text, y)
     love.graphics.setFont(self.nameFont)
-    printCenteredShadowedText(text, y, self.nameColor, self.shadowColor)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.nameColor, self.shadowColor)
     return y + self.nameSize
 end
 
@@ -414,6 +422,7 @@ function gameLevel:load()
     -- load the hud fonts
     gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 32)
     gameLevel.timerFont = love.graphics.newFont("assets/nullp.ttf", 48)
+    messages:load()
 
     -- load an image
     protestorSheet = love.graphics.newImage("assets/protestors.png")
@@ -528,9 +537,13 @@ function gameLevel:update(dt)
         end
     end
     
+    -- update messages
+    messages:update(dt)
+
     -- update camera position
     
     if debugVars.cameraControlEnabled then
+        -- NOTE: on andy's macbook, at 1680x1050, use 3.0
         camera.scale = 2.0
         camera.positionX = player.x - (screen.WIDTH / 2.0) / camera.scale
         camera.positionY = 100.0
@@ -607,6 +620,10 @@ function gameLevel:keypressed(key, unicode)
     if key == "v" then
         soundEmit("test")
     end
+
+    if key == "o" then
+        messages:spawn("text", {255, 128, 0, 255})
+    end
 end
 
 function gameLevel:draw()
@@ -680,6 +697,11 @@ function gameLevel:draw()
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
 
+    -- draw messages
+    love.graphics.push()
+    messages:draw()
+    love.graphics.pop()
+
     -- show the player score
     love.graphics.push()
     love.graphics.setFont(gameLevel.scoreFont)
@@ -690,7 +712,7 @@ function gameLevel:draw()
     else
         textColor = {0, 0, 0, 255}
     end
-    printCenteredShadowedText(text, 10, textColor, {255, 255, 255, 192})
+    printCenteredShadowedText(text, screen.WIDTH / 2, 10, textColor, {255, 255, 255, 192})
     love.graphics.pop()
 
     -- draw game time remaining
@@ -698,7 +720,7 @@ function gameLevel:draw()
     love.graphics.setFont(gameLevel.timerFont)
     local secondsLeft = math.floor(gameLevel.timeRemaining)
     local text = tostring(secondsLeft)
-    printCenteredShadowedText(text, 40, {0, 0, 0, 255}, {255, 255, 255, 192})
+    printCenteredShadowedText(text, screen.WIDTH / 2, 40, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
 end
 
@@ -728,7 +750,7 @@ function gameOverLevel:draw()
     love.graphics.clear()
     love.graphics.setColor(0, 255, 255, 255)
     love.graphics.print("TODO: GAME OVER", 0, 0)
-    love.graphics.print("Your score: "..tostring(gameOverLevel.score), 0, 16)
+    love.graphics.print("Your score: $"..toCurrency(gameOverLevel.score), 0, 16)
 end
 
 function gameOverLevel:keypressed(key)
@@ -1360,6 +1382,11 @@ end
 function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
+    -- make 'ch'ching' noises
+    if self.isPumping and love.math.random(25) == 1 then
+        self:addScore(love.math.random() * 1000)
+    end
+
     -- control inputs
     local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w"))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
@@ -1522,11 +1549,21 @@ function player:draw()
 end
 
 function player:extendDrill(dt)
+  
+    soundStop("drill_up")
+    soundEmit("drill_down")
+
     player.isDrilling = true
     player.drillDepth = math.min(player.drillDepth + (player.DRILL_EXTEND_SPEED * dt), player.DRILL_MAX_DEPTH)
 end
 
 function player:retractDrill(dt)
+  
+    
+    soundStop("drill_down")
+    soundEmit("drill_up")
+  
+  
     player.drillDepth = math.max(0, player.drillDepth - (player.DRILL_RETRACT_SPEED * dt))
     if player.drillDepth == 0 then
         player.isDrilling = false
@@ -1553,6 +1590,10 @@ function player:canStartPumping()
 end
 
 function player:startPumping()
+  
+    soundEmit("pumping")
+    soundEmit("suck")
+  
     -- floodfill to find the size of the deposit
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
     tx = math.floor(tx); ty = math.floor(ty)
@@ -1567,19 +1608,29 @@ function player:startPumping()
 end
 
 function player:cancelPumping()
+    soundStop("suck")
     self.isPumping = false
     print("cancel pumping")
 end
 
+function player:addScore(value)
+    self.score = self.score + value
+    soundEmit("coin")
+end
+
 function player:finishPumping()
+    soundStop("suck")
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
     tx = math.floor(tx); ty = math.floor(ty)
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
-    self.score = self.score + self.pumpScore
+    self:addScore(self.pumpScore)
     self.isPumping = false
     self.autoRetracting = true
 
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
+
+    local msg = "Income"
+    messages:spawn("$"..toCurrency(self.pumpScore)..": "..msg, {0, 255, 0, 255})
 
     print("finish pumping")
 end
@@ -1733,6 +1784,9 @@ function createPerson()
                     soundEmit("splat", 0.5 + love.math.random(), 0.5 + love.math.random())
                     self:kill(-diff)
                     player.score = player.score - player.LAWYER_PRICE
+
+                    local msg = "Breach of the peace"
+                    messages:spawn("$-"..toCurrency(player.LAWYER_PRICE)..": "..msg, {255, 0, 0, 255})
                 end
             elseif math.abs(diff) < 30 then
                 self.target = player.x - diff * 5
@@ -1793,6 +1847,88 @@ function createPerson()
     end
     person:init()
     return person
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
+-- HUD MESSAGE
+
+messages = {
+    DURATION = 3.0,
+    DECELERATION = 5,
+    FLOAT_SPEED = 50,
+    FLOAT_VARIATION = 10,
+    DRIFT_SPEED = 10,
+}
+
+function messages:load()
+    self.fontSize = 24 
+    self.font = love.graphics.newFont("assets/nullp.ttf", self.fontSize)
+end
+
+function messages:spawn(text, color)
+    local message = {}
+    message.duration = messages.DURATION;
+    message.endTime = love.timer.getTime() + message.duration
+    message.text = text
+    message.x = screen.WIDTH / 2
+    message.y = screen.HEIGHT - self.fontSize
+    message.dx = (love.math.random() - 0.5) * 2 * messages.DRIFT_SPEED
+    message.dy = -messages.FLOAT_SPEED - (love.math.random() * messages.FLOAT_VARIATION)
+    message.color = color
+    message.shadowColor = {255, 255, 255, 192}
+
+    function message:update(dt)
+        local ax, ay = messages.DECELERATION, messages.DECELERATION
+        if self.dx > 0 then ax = -ax end
+        if self.dy > 0 then ay = -ay end
+        self.x = self.x + self.dx * dt
+        self.y = self.y + self.dy * dt
+        self.dx = self.dx + ax * dt
+        self.dy = self.dy + ay * dt
+
+        local remaining = (self.endTime - love.timer.getTime())
+        if remaining > 0 then
+            local alpha = remaining / self.duration
+            self.color[4] = 255 * alpha
+            self.shadowColor[4] = 192 * alpha
+        end
+    end
+
+    function message:draw()
+        printCenteredShadowedText(self.text, self.x, self.y, self.color, self.shadowColor)
+    end
+
+    table.insert(messages, #messages, message)
+end
+
+function messages:update(dt)
+    for i=#messages,1,-1 do
+        -- if the message is finished, remove it
+        local m = messages[i]
+        if love.timer.getTime() > m.endTime then
+            table.remove(messages, i)
+        else
+            m:update(dt)
+        end
+    end
+end
+
+function messages:draw()
+    love.graphics.setFont(self.font)
+    for i=1,#messages do
+        local m = messages[i]
+        m:draw()
+    end
 end
 
 -- --------------------------------------------------------------------------------------
