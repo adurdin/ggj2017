@@ -417,7 +417,11 @@ function gameLevel:update(dt)
 
     -- update people
     for x=0,(people.COUNT-1) do
-        if people[x].alive then people[x]:update(dt) end
+        if people[x].alive then
+            people[x]:update(dt)
+        elseif love.math.random() < 0.1 * dt then
+            people[x].alive = true
+        end
     end
     
     if houses then
