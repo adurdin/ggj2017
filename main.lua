@@ -552,7 +552,7 @@ function gameLevel:draw()
     -- show the player score
     love.graphics.push()
     love.graphics.setFont(gameLevel.scoreFont)
-    local text = "$"..toCurrency(player.score)
+    local text = "$"..toCurrency(math.floor(player.drawScore))
     printCenteredShadowedText(text, 10, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
 
@@ -1167,6 +1167,8 @@ function player:create()
     self.trailerRot = 0
     self.frameCounter = 0
     self.score = 0
+    self.drawScore = self.score
+    self.drawScoreAccum = 0
 
     -- drilling
     self.isDrilling = false
@@ -1306,6 +1308,15 @@ function player:update(dt)
     -- put the drill in the trailer
     self.drillX = self.derrickX
     self.drillY = self.derrickY
+
+    -- update player draw score
+    self.drawScoreAccum = self.drawScoreAccum + dt
+    local timestep = 1 / 25
+    if self.drawScoreAccum > timestep then
+        self.drawScoreAccum = self.drawScoreAccum - timestep
+        local limit = 500000000
+        self.drawScore = self.drawScore + clamp(-limit * dt, self.score - self.drawScore, limit * dt)
+    end
 end
 
 function player:draw()
