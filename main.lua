@@ -355,6 +355,10 @@ function gameLevel:load()
     intermediateCanvas:setWrap("repeat", "clamp")
     intermediateCanvas:setFilter("nearest", "nearest")
 
+    bloodParticleImage = love.graphics.newImage("assets/blood.png")
+    bloodParticleImage:setFilter("nearest", "nearest")
+    bloodParticleImage:setWrap("clamp", "clamp")
+ 
     -- load all of the sounds we can
     soundLoad()
 
@@ -438,7 +442,7 @@ function gameLevel:update(dt)
         if people[x].alive then
             people[x]:update(dt)
         elseif love.math.random() < 0.1 * dt then
-            people[x].alive = true
+            people[x]:respawn()
         end
     end
     
@@ -1526,55 +1530,93 @@ end
 -- PEOPLE
 
 people = {
-    COUNT = 20
+    COUNT = 20,
+    DEATH_TIME = 3, -- seconds
 }
 
 function createPerson()
     local person = {}
-    person.x = love.math.random(0, world.WIDTH)
-    person.alive = true
-    person.target = person.x
-    person.anger = love.math.random(0, 1)
-    person.accumulator = 0
-    person.quad = love.graphics.newQuad(love.math.random(0, 3) * 16,
-                                        love.math.random(0, 3) * 16,
-                                        16, 16, 64, 64)
+
+    function person:init()
+        self.x = love.math.random(0, world.WIDTH)
+        self.alive = true
+        self.dying = false
+        self.deadTime = 0
+        self.deadX = 0
+        self.target = self.x
+        self.anger = love.math.random(0, 1)
+        self.accumulator = 0
+        self.quad = love.graphics.newQuad(love.math.random(0, 3) * 16,
+                                            love.math.random(0, 3) * 16,
+                                            16, 16, 64, 64)
+        -- blood particles
+        self.bloodParticleCount = 64
+        self.bloodParticles = love.graphics.newParticleSystem(bloodParticleImage, self.bloodParticleCount)
+        self.bloodParticles:setParticleLifetime(0.25, 1.0)
+        self.bloodParticles:setColors(255, 255, 255, 255,  255, 255, 255, 128) -- Fade to transparency.
+        self.bloodParticles:setPosition(0, -6)
+    end
+
+    function person:kill(velX)
+        self.dying = true
+        self.deadTime = love.timer.getTime() + people.DEATH_TIME
+        self.deadX = self.x + 15 * velX
+        person.bloodParticles:setLinearAcceleration(-(5 * velX), -10, (5 * velX), 50) -- Randomized movement towards the bottom of the screen.
+        self.bloodParticles:emit(self.bloodParticleCount)
+    end
+
+    function person:respawn()
+        self:init()
+    end
 
     function person:update(dt)
-        -- run away
-        local diff = player.x - self.x
-        if math.abs(diff) < 22 and (math.abs(player.vel) - math.abs(diff)) > 0 then
-            if self.alive then
-                soundEmit("splat", 0.5 + love.math.random(), 0.5 + love.math.random())
+        if self.dying then
+            -- get y coord and normal, move towards deadX
+            -- local y, nx, ny = terrain:worldSurface(self.x)
+            -- local limit = dt * ny * ny
+            -- self.x = (self.x + clamp(-limit, self.deadX - self.x, limit)) % world.WIDTH
+            self.x = lerp(self.x, self.deadX, dt)
+
+            if love.timer.getTime() > self.deadTime then
                 self.alive = false
-                player.score = player.score - player.LAWYER_PRICE
             end
-        elseif math.abs(diff) < 30 then
-            self.target = player.x - diff * 5
-        end
-        -- new target
-        if love.math.random() < (0.5 * dt) then
-            self.target = love.math.random(0, world.WIDTH)
-            if math.abs(self.target - player.x) > 250 then
-                self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
-            elseif math.abs(self.target - player.x) > 150 then
-                self.target = self.target + (player.x - self.target) * love.math.random(0.25, 0.85)
-            else
-                self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
-            end
-        end
-
-        -- get y coord and normal
-        local y, nx, ny = terrain:worldSurface(self.x)
-
-        -- scale speed by y component of normal
-        local limit = dt * lerp(100, 150, self.anger) * ny * ny
-        self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
-
-        if math.abs(self.target - self.x) < 2 then
-            self.accumulator = 0
+            self.bloodParticles:update(dt)
         else
-            self.accumulator = (self.accumulator + dt) % lerp(0.2, 0.1, self.anger)
+            -- run away
+            local diff = player.x - self.x
+            if math.abs(diff) < 22 and (math.abs(player.vel) - math.abs(diff)) > 0 then
+                if self.alive then
+                    soundEmit("splat", 0.5 + love.math.random(), 0.5 + love.math.random())
+                    self:kill(-diff)
+                    player.score = player.score - player.LAWYER_PRICE
+                end
+            elseif math.abs(diff) < 30 then
+                self.target = player.x - diff * 5
+            end
+            -- new target
+            if love.math.random() < (0.5 * dt) then
+                self.target = love.math.random(0, world.WIDTH)
+                if math.abs(self.target - player.x) > 250 then
+                    self.target = self.target + (player.x - self.target) * love.math.random(0, 0.35)
+                elseif math.abs(self.target - player.x) > 150 then
+                    self.target = self.target + (player.x - self.target) * love.math.random(0.25, 0.85)
+                else
+                    self.target = self.target + (player.x - self.target) * love.math.random(0.45, 0.95)
+                end
+            end
+
+            -- get y coord and normal
+            local y, nx, ny = terrain:worldSurface(self.x)
+
+            -- scale speed by y component of normal
+            local limit = dt * lerp(100, 150, self.anger) * ny * ny
+            self.x = (self.x + clamp(-limit, self.target - self.x, limit)) % world.WIDTH
+
+            if math.abs(self.target - self.x) < 2 then
+                self.accumulator = 0
+            else
+                self.accumulator = (self.accumulator + dt) % lerp(0.2, 0.1, self.anger)
+            end
         end
     end
     function person:draw()
@@ -1590,9 +1632,22 @@ function createPerson()
 
         love.graphics.setCanvas(intermediateCanvas)
         love.graphics.setColor(255, 255, 255, 255)
-        love.graphics.draw(protestorSheet, self.quad, self.x, y, -angle, dir, 1, 8, 12)
+
+        if self.dying then
+            if dir > 0 then
+                angle = -math.pi / 2
+            else
+                angle = math.pi / 2
+            end
+            love.graphics.draw(protestorSheet, self.quad, self.x, y, angle, 1, 1, 8, 12)
+            love.graphics.draw(self.bloodParticles, self.x, y)
+        else
+            love.graphics.draw(protestorSheet, self.quad, self.x, y, -angle, dir, 1, 8, 12)
+        end
+
         love.graphics.setCanvas()
     end
+    person:init()
     return person
 end
 
