@@ -1400,7 +1400,11 @@ function player:draw()
     -- draw the fractor (three copies because of world wrapping)
     local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
     for i=1,3 do
-        love.graphics.draw(self.image, self.playerQuad, xs[i], self.y + 4,
+        love.graphics.draw(
+            self.image,
+            self.playerQuad,
+            xs[i]      + love.math.random(-self.vel / 500, self.vel / 500),
+            self.y + 4 + love.math.random(-0.1,  0.05),
             self.rot, -- rotation
             self.direction, 1, -- scale
             (self.playerQuadWidth / 2), self.playerQuadHeight)
@@ -1408,8 +1412,10 @@ function player:draw()
 
     -- draw the derrick (three copies because of world wrapping)
     local xs = {self.derrickX, self.derrickX - world.WIDTH, self.derrickX + world.WIDTH}
+    local derrickY = self.derrickY
+    if self.isDrilling then derrickY = derrickY + love.math.random(-0.3, 0.3) end
     for i=1,3 do
-        love.graphics.draw(self.image, self.derrickQuad, xs[i], self.derrickY,
+        love.graphics.draw(self.image, self.derrickQuad, xs[i], derrickY,
             0, -- rotation
             self.direction, 1, -- scale
             (self.derrickQuadWidth / 2), self.derrickQuadHeight)
