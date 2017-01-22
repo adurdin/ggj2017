@@ -44,8 +44,11 @@ level.next = nil
 -- SOUND
 
 sounds = {
-    test = {"assets/sounds/test1.wav", nil},
-    sonar = {"assets/sounds/sonar.wav", nil}
+    test    = {"assets/sounds/test1.wav",   nil},
+    sonar   = {"assets/sounds/sonar.wav",   nil},
+    splat   = {"assets/sounds/splat.wav",   nil},
+    colapse = {"assets/sounds/colapse.wav", nil},
+    deposit = {"assets/sounds/deposit.wav", nil}
 }
 
 function soundLoad()
@@ -405,6 +408,7 @@ function gameLevel:update(dt)
         if not previousCanStartPumping and canStartPumping then
             print("a deposit!")
             -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
+            soundEmit("deposit")
         end
         previousCanStartPumping = canStartPumping
 
@@ -967,6 +971,7 @@ function terrain:startCollapse(x, minX, maxX, minY, maxY)
     end
     self.collapsing = true
     self:wakeColumn(x)
+    soundEmit("colapse")
 end
 
 function terrain:wakeColumn(x)
@@ -1539,8 +1544,11 @@ function createPerson()
         -- run away
         local diff = player.x - self.x
         if math.abs(diff) < 22 and (math.abs(player.vel) - math.abs(diff)) > 0 then
-            self.alive = false
-            player.score = player.score - player.LAWYER_PRICE
+            if self.alive then
+                soundEmit("splat", 0.5 + love.math.random(), 0.5 + love.math.random())
+                self.alive = false
+                player.score = player.score - player.LAWYER_PRICE
+            end
         elseif math.abs(diff) < 30 then
             self.target = player.x - diff * 5
         end
