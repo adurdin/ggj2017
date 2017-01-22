@@ -1630,6 +1630,7 @@ function player:finishPumping()
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
 
     local msg = "Income"
+    messages:spawn("", {255,255,255,0})
     messages:spawn("$"..toCurrency(self.pumpScore)..": "..msg, {0, 255, 0, 255})
 
     print("finish pumping")
@@ -1724,6 +1725,17 @@ end
 --
 -- PEOPLE
 
+deathMessages = {
+    "Manslaughter",
+    "Reckless driving",
+    "Vehicular manslaughter",
+    "Loss of life and/or limb",
+    "Reckless endagerment",
+    "Settled out of court",
+    "Statutory fine",
+    "Obstruction of justice",
+}
+
 people = {
     COUNT = 40,
     DEATH_TIME = 3, -- seconds
@@ -1785,7 +1797,8 @@ function createPerson()
                     self:kill(-diff)
                     player.score = player.score - player.LAWYER_PRICE
 
-                    local msg = "Breach of the peace"
+                    local msg = deathMessages[math.random(#deathMessages)]
+                    messages:spawn("", {255,255,255,0})
                     messages:spawn("$-"..toCurrency(player.LAWYER_PRICE)..": "..msg, {255, 0, 0, 255})
                 end
             elseif math.abs(diff) < 30 then
@@ -1862,13 +1875,12 @@ end
 --
 -- HUD MESSAGE
 
-messages = {
-    DURATION = 3.0,
-    DECELERATION = 5,
-    FLOAT_SPEED = 50,
-    FLOAT_VARIATION = 10,
-    DRIFT_SPEED = 10,
-}
+MESSAGE_DURATION = 4.0
+MESSAGE_DECELERATION = 5
+MESSAGE_FLOAT_SPEED = 50
+MESSAGE_FLOAT_VARIATION = 10
+MESSAGE_DRIFT_SPEED = 10
+messages = {}
 
 function messages:load()
     self.fontSize = 24 
@@ -1877,18 +1889,18 @@ end
 
 function messages:spawn(text, color)
     local message = {}
-    message.duration = messages.DURATION;
+    message.duration = MESSAGE_DURATION;
     message.endTime = love.timer.getTime() + message.duration
     message.text = text
     message.x = screen.WIDTH / 2
-    message.y = screen.HEIGHT - self.fontSize
-    message.dx = (love.math.random() - 0.5) * 2 * messages.DRIFT_SPEED
-    message.dy = -messages.FLOAT_SPEED - (love.math.random() * messages.FLOAT_VARIATION)
+    message.y = screen.HEIGHT + #messages * self.fontSize / 4
+    message.dx = (love.math.random() - 0.5) * 2 * MESSAGE_DRIFT_SPEED
+    message.dy = -MESSAGE_FLOAT_SPEED - (love.math.random() * MESSAGE_FLOAT_VARIATION)
     message.color = color
     message.shadowColor = {255, 255, 255, 192}
 
     function message:update(dt)
-        local ax, ay = messages.DECELERATION, messages.DECELERATION
+        local ax, ay = MESSAGE_DECELERATION, MESSAGE_DECELERATION
         if self.dx > 0 then ax = -ax end
         if self.dy > 0 then ay = -ay end
         self.x = self.x + self.dx * dt
