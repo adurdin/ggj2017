@@ -202,7 +202,7 @@ function love.keypressed(key, unicode)
         end
     end
 
-    if love.keyboard.isDown("space") and not player.isDrilling then
+    if key == "space" and not player.isDrilling then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
         sonarVars.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
@@ -492,7 +492,6 @@ function terrain:collapseColumn(x, dt)
                     if newY >= writeY then
                         newY = writeY
                         newVelocity = math.min(newVelocity, maxVelocity)
-                        -- print("collided at: "..dump(newY).." newY: "..dump(newY).." newVelocity: "..dump(newVelocity))
                     end
 
                     -- pixels above can't fall faster than this one if they hit it
@@ -574,6 +573,92 @@ function terrain:worldSurface(worldX, vx)
     else
       return nil, nil, nil
     end
+end
+
+function terrain:floodfill(x, y, r, g, b, a)
+    -- floodfill algorithm stolen from the forums
+    local Queue={}
+    Queue.__index=Queue
+    function Queue:new()
+        return setmetatable({Q={},D={}}, Queue)
+    end
+    function Queue:put(x, y)
+        local key=x..':'..y
+        table.insert(self.Q, {x,y})
+        self.Q[key]=true
+    end
+    function Queue:get()
+        local x, y=unpack(table.remove(self.Q, 1))
+        local key=x..':'..y
+        self.Q[key]=nil
+        return x, y
+    end
+    function Queue:has(x, y)
+        local key=x..':'..y
+        return self.Q[key]
+    end
+    function Queue:setSeen(x, y)
+        local key=x..':'..y
+        self.D[key]=true
+    end
+    function Queue:seen(x, y)
+        local key=x..':'..y
+        return self.D[key]
+    end
+    function Queue:size()
+        return #self.Q
+    end
+
+    local minX, maxX = x, x
+    local minY, maxY = y, y
+    local pixelCount = 0
+
+    Q=Queue:new()
+    function canFill(x, y, targetAlpha)
+        if x < 0 or x >= self.width or y < 0 or y >= self.height then
+            return false
+        elseif Q:seen(x, y) then
+            return false
+        else
+            local pixel = {self.data:getPixel(x, y)}
+            return (pixel[4] == targetAlpha)
+        end
+    end
+
+    local fill
+    function fill(x, y, targetAlpha, r, g, b, a)
+        if not canFill(x, y, targetAlpha) then
+            if Q:size()>0 then
+                x, y=Q:get()
+                return fill(x, y, targetAlpha, r, g, b, a)
+            else
+                return
+            end
+        end
+        self.data:setPixel(x, y, r, g, b, a)
+        Q:setSeen(x, y)
+        pixelCount = pixelCount + 1
+        if x < minX then minX = x end
+        if x > maxX then maxX = x end
+        if y < minY then minY = y end
+        if y > maxY then maxY = y end
+        if canFill(x+1, y, targetAlpha) and not Q:has(x+1, y) then
+            Q:put(x+1, y)
+        end
+        if canFill(x, y+1, targetAlpha) and not Q:has(x, y+1) then
+            Q:put(x, y+1)
+        end
+        if canFill(x-1, y, targetAlpha) and not Q:has(x-1, y) then
+            Q:put(x-1, y)
+        end
+        return fill(x, y-1, targetAlpha, r, g, b, a)
+    end
+
+    -- start a floodfill
+    local pixel = {self.data:getPixel(x, y)}
+    fill(x, y, pixel[4], r, g, b, a)
+
+    return minX, maxX, minY, maxY, pixelCount
 end
 
 -- --------------------------------------------------------------------------------------
