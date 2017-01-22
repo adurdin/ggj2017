@@ -451,7 +451,7 @@ function gameLevel:draw()
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
     
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
-    drawShader:send("cameraScale", camera.scale * SCREEN_CAMERA_SCALE / fullScreenCorrection)
+    drawShader:send("cameraScale", camera.scale / SCREEN_CAMERA_SCALE / fullScreenCorrection)
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
