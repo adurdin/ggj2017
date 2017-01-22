@@ -1235,7 +1235,7 @@ function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
     -- control inputs
-    local retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
+    local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w"))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
     local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a"))
     local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d"))
@@ -1394,6 +1394,7 @@ function player:retractDrill(dt)
     player.drillDepth = math.max(0, player.drillDepth - (player.DRILL_RETRACT_SPEED * dt))
     if player.drillDepth == 0 then
         player.isDrilling = false
+        player.autoRetracting = false
     end
 end
 
@@ -1440,6 +1441,7 @@ function player:finishPumping()
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
     self.score = self.score + self.pumpScore
     self.isPumping = false
+    self.autoRetracting = true
 
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
 
