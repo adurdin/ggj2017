@@ -15,7 +15,8 @@ world = {
 screen = {
     -- NOTE: on andy's macbook, use 1680x1050 for fullscreen
   WIDTH = 800,
-  HEIGHT = 600
+  HEIGHT = 600,
+  DEFAULT_FULLSCREEN = false
 }
 
 -- minimum scale fills the height of the screen
@@ -153,6 +154,15 @@ function setWindow(width, height, fullscreen)
     if height == nil then height = previousHeight end
     if fullscreen == nil then fullscreen = previousFlags.fullscreen end
 
+    -- ignore args, and just hardcode sizes here, until we can calculate screen sizes
+    if fullscreen then
+        width = desktopWidth
+        height = desktopHeight
+    else
+        width = 800
+        height = 600
+    end
+
     -- make sure the window can fit on the screen
     width = math.min(width, desktopWidth)
     height = math.min(height, desktopHeight)
@@ -162,7 +172,7 @@ function setWindow(width, height, fullscreen)
         centered = true,
         fullscreen = fullscreen,
         vsync = true,
-        resizable = true,
+        resizable = false,
         centered = true,
         borderless = fullscreen,
         display = display,
@@ -573,30 +583,40 @@ function gameLevel:update(dt)
     -- update camera position
     
     if debugVars.cameraControlEnabled then
-        -- NOTE: on andy's macbook, at 1680x1050, use 3.0
-        camera.scale = 2.0
+        if screen.WIDTH == 1680 and screen.HEIGHT == 1050 then
+            camera.scale = 3.0
+        else
+            camera.scale = 2.0
+        end
         camera.positionX = player.x - (screen.WIDTH / 2.0) / camera.scale
         camera.positionY = 100.0
     else
-      if false then
-        if love.keyboard.isDown("insert") then
-            camera.scale = camera.scale + 0.01
-        elseif love.keyboard.isDown("delete") then
-            camera.scale = camera.scale - 0.01
-        elseif love.keyboard.isDown("home") then
-            camera.positionX = camera.positionX + 5
-        elseif love.keyboard.isDown("end") then
-            camera.positionX = camera.positionX - 5
-        elseif love.keyboard.isDown("pageup") then
-            camera.positionY = camera.positionY + 5
-        elseif love.keyboard.isDown("pagedown") then
-            camera.positionY = camera.positionY - 5
+        if false then
+            if love.keyboard.isDown("r") then
+                camera.scale = camera.scale + 0.01
+            elseif love.keyboard.isDown("f") then
+                camera.scale = camera.scale - 0.01
+            elseif love.keyboard.isDown("t") then
+                camera.positionX = camera.positionX + 5
+            elseif love.keyboard.isDown("g") then
+                camera.positionX = camera.positionX - 5
+            elseif love.keyboard.isDown("y") then
+                camera.positionY = camera.positionY + 5
+            elseif love.keyboard.isDown("h") then
+                camera.positionY = camera.positionY - 5
+            end
+            print(" s: "..dump(camera.scale).." x: "..dump(camera.positionX).." y: "..dump(camera.positionY))
+        else
+            if screen.WIDTH == 1680 and screen.HEIGHT == 1050 then
+                camera.scale = 1.92
+                camera.positionX = 280
+                camera.positionY = -300
+            else
+                camera.scale = 1.3
+                camera.positionX = 420.0
+                camera.positionY = -245.0
+            end
         end
-        print(" s: "..dump(camera.scale).." x: "..dump(camera.positionX).." y: "..dump(camera.positionY))
-        end
-        camera.scale = 1.3
-        camera.positionX = 420.0
-        camera.positionY = -245.0
     end
 end
 
@@ -607,7 +627,7 @@ function gameLevel:keypressed(key, unicode)
         level.next = menuLevel
     end
 
-    if love.keyboard.isDown("p") then
+    if false and love.keyboard.isDown("p") then
         if debugVars.debugModeEnabled == false then
             debugVars.debugModeEnabled = true
         else
@@ -615,7 +635,7 @@ function gameLevel:keypressed(key, unicode)
         end
     end
     
-    if love.keyboard.isDown("r") then
+    if false and love.keyboard.isDown("r") then
         if debugVars.polarRenderingEnabled == false then
             debugVars.polarRenderingEnabled = true
         else
@@ -623,7 +643,7 @@ function gameLevel:keypressed(key, unicode)
         end
     end
     
-    if love.keyboard.isDown("c") then
+    if false and love.keyboard.isDown("c") then
         if debugVars.cameraControlEnabled == false then
             debugVars.cameraControlEnabled = true
         else
@@ -843,7 +863,7 @@ function love.load()
     debugVars.cameraControlEnabled = false
 
     -- set up the window
-    setWindow(screen.WIDTH, screen.HEIGHT, false)
+    setWindow(screen.WIDTH, screen.HEIGHT, screen.DEFAULT_FULLSCREEN)
     singlePixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
 
     -- load the first level
