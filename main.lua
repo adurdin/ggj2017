@@ -71,8 +71,9 @@ function soundLoad()
             src:setLooping(loop)
         end
     end
-    -- BUG: this is playing music over the top of itself. Fix it later.
-    -- soundEmit("music", 0.5, 1.0)
+    -- NOTE: this is a quick fix to stop playing music over the top of itself.
+    love.audio.stop( )
+    soundEmit("music", 0.5, 1.0)
 end
 
 function soundEmit(name, vol, pitch)
