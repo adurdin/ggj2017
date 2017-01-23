@@ -134,6 +134,27 @@ function lerp(v1, v2, t)
     return v1 + (v2 - v1) * t
 end
 
+function randomScaledPointInRectWithOffset(centerX, centerY, rectWidth, rectHeight, scale, offsetX, offsetY)
+    local leftHalfWidth = (rectWidth / 2) - (centerX - offsetX)
+    local rightHalfWidth = rectWidth - leftHalfWidth
+    local topHalfHeight = (rectHeight / 2) - (centerY - offsetY)
+    local bottomHalfHeight = rectHeight - topHalfHeight
+    local x, y
+    local nx = 2 * scale * (love.math.random() - 0.5)
+    local ny = 2 * scale * (love.math.random() - 0.5)
+    if nx < 0 then
+        x = offsetX + leftHalfWidth * nx
+    else
+        x = offsetX + rightHalfWidth * nx
+    end
+    if ny < 0 then
+        y = offsetY + topHalfHeight * ny
+    else
+        y = offsetY + bottomHalfHeight * ny
+    end
+    return x, y
+end
+
 function isCtrlPressed()
     return (love.keyboard.isDown("lctrl") or love.keyboard.isDown("rctrl"))
 end
@@ -213,9 +234,12 @@ function terrain_to_world(x, y)
 end
 
 function world_to_terrain(x, y)
+    local offsetY = (y - world.TERRAIN_Y)
+    local scaleX = (terrain.WIDTH / world.WIDTH)
+    local scaleY = (terrain.HEIGHT / world.TERRAIN_SIZE)
     return
-        (x * (terrain.WIDTH / world.WIDTH)),
-        ((y - world.TERRAIN_Y) * (terrain.HEIGHT / world.TERRAIN_SIZE))
+        math.floor((x * scaleX) + 0.5),
+        math.floor((offsetY * scaleY) + 0.5)
 end
 
 function terrain_to_world_height(h)
@@ -536,6 +560,10 @@ function gameLevel:load()
     bloodParticleImage = love.graphics.newImage("assets/blood.png")
     bloodParticleImage:setFilter("nearest", "nearest")
     bloodParticleImage:setWrap("clamp", "clamp")
+
+    pumpParticleImage = love.graphics.newImage("assets/pumpParticle.png")
+    pumpParticleImage:setFilter("nearest", "nearest")
+    pumpParticleImage:setWrap("clamp", "clamp")
  
     -- load all of the sounds we can
     soundLoad()
@@ -606,7 +634,13 @@ function gameLevel:update(dt)
             player:cancelPumping()
         elseif spacePressed and player.isPumping then
             -- keep pumping while space is held
-            if love.timer.getTime() > player.pumpEndTime then
+            -- increment pumping progress
+            player.pumpProgress = math.min(player.pumpProgress +
+                (player.PUMP_RATE / player.pumpSize  * dt), 1.0)
+            -- show feedback
+            player:addPumpParticles()
+            -- check for completion
+            if player.pumpProgress == 1.0 then
                 player:finishPumping()
             end
         end
@@ -1318,6 +1352,19 @@ function terrain:worldSurface(worldX, vx)
     end
 end
 
+function terrain:sample(tx, ty)
+    return self.data:getPixel(tx, ty)
+end
+
+function terrain:worldSample(worldX, worldY)
+    local tx, ty = world_to_terrain(worldX, worldY)
+    if (tx >= 0 and tx < self.WIDTH and ty >= 0 and ty < self.HEIGHT) then
+        return self.data:getPixel(tx, ty)
+    else
+        return nil, nil, nil, nil
+    end
+end
+
 function terrain:removeGasFromColumn(x)
     terrainColour = {123, 69, 23}
     for y=0,(self.height-1) do
@@ -1488,8 +1535,10 @@ function player:create()
     self.pumpY = 0
     self.pumpSize = 0
     self.pumpScore = 0
-    self.pumpStartTime = 0
-    self.pumpEndTime = 0
+    self.pumpProgress = 0
+    self.pumpBounds = {minX=0, minY=0, maxX=0, maxY=0}
+    self.pumpParticleSystems = {}
+    self.pumpParticleSystemCount = 50
 
     -- player image
     self.image = love.graphics.newImage("assets/fractor.png")
@@ -1629,6 +1678,9 @@ function player:update(dt)
         local limit = 800000000
         self.drawScore = self.drawScore + clamp(-limit * dt, self.score - self.drawScore, limit * dt)
     end
+
+    -- update pumping particles
+    self:updatePumpParticles(dt)
 end
 
 function player:draw()
@@ -1690,6 +1742,9 @@ function player:draw()
             self.direction, 1, -- scale
             self.trailerQuadWidth, self.trailerQuadHeight)
     end
+
+    -- draw the pumping particles
+    self:drawPumpParticles()
 end
 
 function player:extendDrill(dt)
@@ -1718,19 +1773,8 @@ end
 function player:canStartPumping()
     self.pumpX = self.drillX
     self.pumpY = self.drillY + self.drillDepth
-    local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
-    tx = math.floor(tx); ty = math.floor(ty)
-    local valid = (tx >= 0 and tx < terrain.WIDTH and ty >= 0 and ty < terrain.HEIGHT)
-    if valid then
-        local _,_,_,a = terrain.data:getPixel(tx, ty)
-        if a == TERRAIN_GAS_ALPHA then
-            return true
-        else
-            return false
-        end
-    else
-        return false
-    end
+    local _, _, _, a = terrain:worldSample(self.pumpX, self.pumpY)
+    return (a == TERRAIN_GAS_ALPHA)
 end
 
 function player:startPumping()
@@ -1740,13 +1784,12 @@ function player:startPumping()
   
     -- floodfill to find the size of the deposit
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
-    tx = math.floor(tx); ty = math.floor(ty)
-    local _,_,_,_,size = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
+    local minX,maxX,minY,maxY,size = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
     local duration = size / self.PUMP_RATE
     self.pumpSize = size
     self.pumpScore = math.floor(self.GAS_PRICE * size)
-    self.pumpStartTime = love.timer.getTime()
-    self.pumpEndTime = self.pumpStartTime + duration
+    self.pumpProgress = 0
+    self.pumpBounds = {minX=minX, minY=minY, maxX=maxX, maxY=maxY}
     self.isPumping = true
     print("start pumping, size: "..dump(size).." duration: "..dump(duration))
 end
@@ -1762,10 +1805,94 @@ function player:addScore(value)
     soundEmit("coin")
 end
 
+function player:addPumpParticles()
+    -- find a free particle system (if any)
+    local psys
+    local maxParticleSystems = math.ceil(self.pumpProgress * self.pumpParticleSystemCount)
+    for i=1,math.min(maxParticleSystems, #self.pumpParticleSystems) do
+        local p = self.pumpParticleSystems[i]
+        if p:getCount() == 0 then
+            -- reuse it
+            psys = p
+            break
+        end
+    end
+    if psys == nil then
+        local count = #self.pumpParticleSystems
+        if count <= maxParticleSystems then
+            -- add a new particle system
+            psys = self:createPumpParticleSystem()
+            table.insert(self.pumpParticleSystems, psys)
+        else
+            -- too many particle systems; ignore
+            return
+        end
+    end
+
+    -- take a few tries to find a suitable point in the bounding rect that's gaseous
+    -- I mean the point is gaseous, not the bounding rect
+    -- that would just be ridiculous
+    local centerTX = (self.pumpBounds.maxX + self.pumpBounds.minX) / 2
+    local centerTY = (self.pumpBounds.maxY + self.pumpBounds.minY) / 2
+    local rectTWidth = math.abs(self.pumpBounds.maxX - self.pumpBounds.minX)
+    local rectTHeight = math.abs(self.pumpBounds.maxY - self.pumpBounds.minY)
+    local pumpTX, pumpTY = world_to_terrain(self.pumpX, self.pumpY + 5)
+    local x, y
+    for i=1,5 do
+        -- find a random point
+        local tx, ty = randomScaledPointInRectWithOffset(centerTX, centerTY,
+            rectTWidth, rectTHeight, self.pumpProgress, pumpTX, pumpTY)
+        tx, ty = math.floor(tx), math.floor(ty)
+
+        -- check if it's gas
+        local _, _, _, a = terrain:sample(tx, ty)
+        if a == TERRAIN_GAS_ALPHA then
+            x, y = terrain_to_world(tx, ty)
+            break
+        end
+    end
+    if x ~= nil and y ~= nil then
+        -- position the particle system
+        psys:setPosition(x, y)
+        -- set the speed
+        local dx, dy = (self.pumpX - x), (self.pumpY - y)
+        local length = math.sqrt(dx*dx + dy*dy)
+        local ndx, ndy = dx / length, dy / length
+        local speedMin, speedMax = 5, 10
+        psys:setLinearAcceleration(dx * speedMin, dy * speedMin, dx * speedMax, dy * speedMax)
+        -- emit some particles
+        psys:emit(psys:getBufferSize()) --love.math.random(psys:getBufferSize()))
+    end
+end
+
+function player:createPumpParticleSystem()
+    local particleCount = 10
+    local psys = love.graphics.newParticleSystem(pumpParticleImage, particleCount)
+    psys:setParticleLifetime(0.2, 0.5)
+    psys:setColors(255, 255, 255, 255,  255, 255, 255, 128) -- Fade to transparency.
+    return psys
+end
+
+function player:updatePumpParticles(dt)
+    for i=1,#self.pumpParticleSystems do
+        local p = self.pumpParticleSystems[i]
+        p:update(dt)
+    end
+end
+
+function player:drawPumpParticles()
+    for i=1,#self.pumpParticleSystems do
+        local p = self.pumpParticleSystems[i]
+        love.graphics.draw(p, 0, 0)
+
+        -- p:setPosition(0, 0)
+        -- love.graphics.draw(p, self.x, self.y)
+    end
+end
+
 function player:finishPumping()
     soundStop("suck")
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
-    tx = math.floor(tx); ty = math.floor(ty)
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
     self:addScore(self.pumpScore)
     self.isPumping = false
