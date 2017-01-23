@@ -1596,8 +1596,10 @@ end
 
 player = {
     DRILL_MAX_DEPTH = terrain_to_world_height(terrain.HEIGHT) - 1, -- frackulons
-    DRILL_EXTEND_SPEED = 64, -- frackulons/second
-    DRILL_RETRACT_SPEED = 128, -- frackulons/second
+    DRILL_EXTEND_SPEED_DIRT = 64, -- frackulons/second
+    DRILL_EXTEND_SPEED_GAS = 32, -- frackulons/second
+    DRILL_RETRACT_SPEED_DIRT = 128, -- frackulons/second
+    DRILL_RETRACT_SPEED_GAS = 64, -- frackulons/second
     PUMP_RATE = 1000/2, -- terrain units / second; an 1000 unit deposit will take four seconds
     GAS_PRICE = 987654/1, -- dollars / terrain units
     LAWYER_PRICE = 17 * 1754362 -- dollars / protester
@@ -1686,7 +1688,7 @@ function player:update(dt)
         self.vel = 0
     end
 
-    if self.isDrilling and not self.isPumping and not spacePressed then
+    if player.autoRetracting or (self.isDrilling and not self.isPumping and not spacePressed) then
         -- can only move the drill up and down while drilling, and not pumping
         if extendDrill and not retractDrill then
             self:extendDrill(dt)
@@ -1848,7 +1850,14 @@ function player:extendDrill(dt)
     soundEmit("drill_down")
 
     player.isDrilling = true
-    player.drillDepth = math.min(player.drillDepth + (player.DRILL_EXTEND_SPEED * dt), player.DRILL_MAX_DEPTH)
+
+    local drillSpeed
+    if player:canStartPumping() then
+        drillSpeed = player.DRILL_EXTEND_SPEED_GAS
+    else
+        drillSpeed = player.DRILL_EXTEND_SPEED_DIRT
+    end
+    player.drillDepth = math.min(player.drillDepth + (drillSpeed * dt), player.DRILL_MAX_DEPTH)
 end
 
 function player:retractDrill(dt)
@@ -1857,8 +1866,13 @@ function player:retractDrill(dt)
     soundStop("drill_down")
     soundEmit("drill_up")
   
-  
-    player.drillDepth = math.max(0, player.drillDepth - (player.DRILL_RETRACT_SPEED * dt))
+    local drillSpeed
+    if not autoRetracting and player:canStartPumping() then
+        drillSpeed = player.DRILL_RETRACT_SPEED_GAS
+    else
+        drillSpeed = player.DRILL_RETRACT_SPEED_DIRT
+    end
+    player.drillDepth = math.max(0, player.drillDepth - (drillSpeed * dt))
     if player.drillDepth == 0 then
         player.isDrilling = false
         player.autoRetracting = false
