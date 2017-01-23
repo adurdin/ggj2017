@@ -280,6 +280,17 @@ function menuLevel:draw()
     love.graphics.setFont(debugVars.debugFont)
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
+    
+    -- nonsense from aaron
+    love.graphics.setColor(0,140,255)
+    love.graphics.rectangle("fill", 0, 0, screen.WIDTH, screen.HEIGHT-100)
+    love.graphics.setColor(5,162,9)
+    love.graphics.rectangle("fill", 0, screen.HEIGHT-100, screen.WIDTH, screen.HEIGHT-50)
+    love.graphics.setColor(123,69,23)
+    love.graphics.rectangle("fill", 0, screen.HEIGHT-50, screen.WIDTH, screen.HEIGHT)
+    love.graphics.setColor(255,255,255,255);
+    menuImage = love.graphics.newImage("assets/menu.png")
+    love.graphics.draw(menuImage, screen.WIDTH-500,screen.HEIGHT-500)
 
     local y = 50
     y = self:printTitle("F R A C K  t h e  P L A N E T", y)
