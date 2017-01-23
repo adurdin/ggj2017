@@ -249,8 +249,8 @@ menuLevel = {}
 
 function menuLevel:load()
     -- load credits sprites
-    self.titleSize = 64
-    self.nameSize = 48
+    self.titleSize = 48
+    self.nameSize = 28
     self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
     self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
     self.titleColor = {255, 64, 32, 255}
@@ -290,6 +290,9 @@ function menuLevel:draw()
     y = self:printName("Space ---  Scan for gas deposits", y)
     y = self:printName("Up/Down --------------  Drill up/down", y)
     y = self:printName("Space (hold) --- Pump gas from deposit", y)
+    y = self:blankLine(y)
+    y = self:printName("C for credits", y)
+    y = self:printName("ESC to quit", y)
 end
 
 function menuLevel:keypressed(key)
@@ -794,8 +797,8 @@ function gameOverLevel:load()
     gameOverLevel.score = player.score
 
     -- load credits sprites
-    self.titleSize = 64
-    self.nameSize = 48
+    self.titleSize = 48
+    self.nameSize = 36
     self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
     self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
     self.titleColor = {255, 64, 32, 255}
