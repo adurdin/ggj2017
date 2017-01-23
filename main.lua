@@ -564,6 +564,10 @@ function gameLevel:load()
     pumpParticleImage = love.graphics.newImage("assets/pumpParticle.png")
     pumpParticleImage:setFilter("nearest", "nearest")
     pumpParticleImage:setWrap("clamp", "clamp")
+
+    rockParticleImage = love.graphics.newImage("assets/rockParticle.png")
+    rockParticleImage:setFilter("nearest", "nearest")
+    rockParticleImage:setWrap("clamp", "clamp")
  
     -- load all of the sounds we can
     soundLoad()
@@ -631,7 +635,8 @@ function gameLevel:update(dt)
             if canStartPumping then
                 player:startPumping()
             else
-                -- TODO: visual or audio feedback that there's nothing to pump here
+                -- TODO: audio feedback that there's nothing to pump here
+                player:addRockParticles()
             end
         elseif not spacePressed and player.isPumping then
             player:cancelPumping()
@@ -1542,6 +1547,7 @@ function player:create()
     self.pumpBounds = {minX=0, minY=0, maxX=0, maxY=0}
     self.pumpParticleSystems = {}
     self.pumpParticleSystemCount = 50
+    self.rockParticleSystem = self:createRockParticleSystem()
 
     -- player image
     self.image = love.graphics.newImage("assets/fractor.png")
@@ -1682,8 +1688,9 @@ function player:update(dt)
         self.drawScore = self.drawScore + clamp(-limit * dt, self.score - self.drawScore, limit * dt)
     end
 
-    -- update pumping particles
+    -- update particle systems
     self:updatePumpParticles(dt)
+    self:updateRockParticles(dt)
 end
 
 function player:draw()
@@ -1746,8 +1753,9 @@ function player:draw()
             self.trailerQuadWidth, self.trailerQuadHeight)
     end
 
-    -- draw the pumping particles
+    -- draw the particle systems
     self:drawPumpParticles()
+    self:drawRockParticles()
 end
 
 function player:extendDrill(dt)
@@ -1870,7 +1878,7 @@ function player:addPumpParticles()
         local speedMin, speedMax = 5, 10
         psys:setLinearAcceleration(dx * speedMin, dy * speedMin, dx * speedMax, dy * speedMax)
         -- emit some particles
-        psys:emit(psys:getBufferSize()) --love.math.random(psys:getBufferSize()))
+        psys:emit(psys:getBufferSize())
     end
 end
 
@@ -1893,10 +1901,31 @@ function player:drawPumpParticles()
     for i=1,#self.pumpParticleSystems do
         local p = self.pumpParticleSystems[i]
         love.graphics.draw(p, 0, 0)
-
-        -- p:setPosition(0, 0)
-        -- love.graphics.draw(p, self.x, self.y)
     end
+end
+
+function player:addRockParticles()
+    if self.rockParticleSystem:getCount() == 0 then
+        self.rockParticleSystem:setPosition(self.pumpX, self.pumpY)
+        self.rockParticleSystem:emit(self.rockParticleSystem:getBufferSize())
+    end
+end
+
+function player:createRockParticleSystem()
+    local particleCount = 10
+    local psys = love.graphics.newParticleSystem(rockParticleImage, particleCount)
+    psys:setParticleLifetime(0.5, 1.5)
+    psys:setColors(255, 255, 255, 255,  255, 255, 255, 128) -- Fade to transparency.
+    psys:setLinearAcceleration(-15, -15, 15, 15)
+    return psys
+end
+
+function player:updateRockParticles(dt)
+    self.rockParticleSystem:update(dt)
+end
+
+function player:drawRockParticles()
+    love.graphics.draw(self.rockParticleSystem, 0, 0)
 end
 
 function player:finishPumping()
