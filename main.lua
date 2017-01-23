@@ -2,14 +2,18 @@ debugVars = {}
 
 terrain = {
     WIDTH = 1024,
-    HEIGHT = 160
+    HEIGHT = 160,
+    GRASS_DEPTH = 5,
+    MIN_DEPOSIT_WIDTH = 40,
+    MIN_DEPOSIT_HEIGHT = 5,
+    MIN_EDGE_HEIGHT = 10,
 }
 
 world = {
     WIDTH = 1440,
     HEIGHT = 500,
     TERRAIN_Y = 200,
-    TERRAIN_SIZE = 200
+    TERRAIN_SIZE = 160
 }
 
 screen = {
@@ -212,6 +216,31 @@ function printCenteredShadowedText(text, x, y, color, shadowColor)
     love.graphics.printf(text, x - halfWidth + offset, y + offset, halfWidth * 2, "center")
     love.graphics.setColor(color[1], color[2], color[3], color[4])
     love.graphics.printf(text, x - halfWidth, y, halfWidth * 2, "center")
+end
+
+function string:split(sSeparator, nMax, bRegexp)
+    assert(sSeparator ~= '')
+    assert(nMax == nil or nMax >= 1)
+
+    local aRecord = {}
+
+    if self:len() > 0 then
+        local bPlain = not bRegexp
+        nMax = nMax or -1
+
+        local nField, nStart = 1, 1
+        local nFirst,nLast = self:find(sSeparator, nStart, bPlain)
+        while nFirst and nMax ~= 0 do
+            aRecord[nField] = self:sub(nStart, nFirst-1)
+            nField = nField+1
+            nStart = nLast+1
+            nFirst,nLast = self:find(sSeparator, nStart, bPlain)
+            nMax = nMax-1
+        end
+        aRecord[nField] = self:sub(nStart)
+    end
+
+    return aRecord
 end
 
 -- --------------------------------------------------------------------------------------
@@ -535,6 +564,7 @@ function gameLevel:load()
 
     -- random seed
     gameLevel.seed = (love.math.random() - 0.5) * 10 * 2 * terrain.WIDTH
+    print("seed: "..dump(gameLevel.seed))
 
     -- load the hud fonts
     gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 32)
@@ -868,6 +898,10 @@ function gameLevel:draw()
     local text = tostring(secondsLeft)
     printCenteredShadowedText(text, screen.WIDTH / 2, 40, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
+
+    if debugVars.renderTerrainBuffer then
+        terrain:draw(-512, 0, false)
+    end
 end
 
 -- --------------------------------------------------------------------------------------
@@ -969,6 +1003,7 @@ function love.load()
     debugVars.debugModeEnabled = false
     debugVars.polarRenderingEnabled = true
     debugVars.cameraControlEnabled = false
+    debugVars.renderTerrainBuffer = false
 
     -- set up the window
     setWindow(screen.WIDTH, screen.HEIGHT, screen.DEFAULT_FULLSCREEN)
@@ -1102,6 +1137,7 @@ end
 -- dirt 0 is not falling; dirt 1-127 is falling with some velocity
 TERRAIN_DIRT_ALPHA_MIN = 0
 TERRAIN_DIRT_ALPHA_MAX = 127
+TERRAIN_DIRT_COLOR = {123, 69, 23}
 -- gas is paydirt. paydirt is not dirt.
 TERRAIN_GAS_ALPHA = 128
 -- void is where gas used to be, but we pumped it out.
@@ -1123,7 +1159,7 @@ function generateTerrainPixel(x, y, r, g, b, a)
     local isDirt = (noise > 0.24)
     -- rgb channels can be used for color data
     -- alpha channel is terrain data and should not be rendered
-    if y < 5 then
+    if y < terrain.GRASS_DEPTH then
         -- grass
         return 5, 162, 9, TERRAIN_DIRT_ALPHA_MIN
     elseif isDirt then
@@ -1151,8 +1187,7 @@ function terrain:create()
 
     -- create a terrain
     self.data:mapPixel(generateTerrainPixel)
-    self:removeGasFromColumn(0)
-    self:removeGasFromColumn(self.width-1)
+    self:removeUnusableDeposits()
 
     self.image = love.graphics.newImage(self.data)
     self.image:setFilter("nearest", "nearest")
@@ -1375,13 +1410,63 @@ function terrain:worldSample(worldX, worldY)
     end
 end
 
-function terrain:removeGasFromColumn(x)
-    terrainColour = {123, 69, 23}
-    for y=0,(self.height-1) do
-        local _, _, _, a = self.data:getPixel(x, y)        
-        if a == TERRAIN_GAS_ALPHA then
-            self:floodfill(x, y, TERRAIN_DIRT_ALPHA_MIN, terrainColour)
+function terrain:removeUnusableDeposits()
+    local deposits = {}
+    local filledPixels = {}
+
+    -- find all deposits
+    function handleDepositPixel(x, y, r, g, b, a)
+        if a == TERRAIN_GAS_ALPHA and not PixelSet.contains(filledPixels, x, y) then
+            -- do a floodfill to get the extents
+            local fill = terrain:floodfill(x, y, TERRAIN_GAS_ALPHA)
+            table.insert(deposits, fill)
+            PixelSet.addPixelSet(filledPixels, fill.filled)
         end
+        return r, g, b, a
+    end
+    self.data:mapPixel(handleDepositPixel)
+
+    -- fill in unwanted deposits
+    for i, d in pairs(deposits) do
+        local atLeftEdge = (d.minX == 0)
+        local atRightEdge = (d.maxX == terrain.WIDTH - 1)
+        local atTopAndShallow = (d.minY <= terrain.GRASS_DEPTH and d.maxY < terrain.MIN_EDGE_HEIGHT)
+        local atBottomAndShallow = (d.maxY >= (terrain.HEIGHT - 1) and (d.maxY - d.minY) < terrain.MIN_EDGE_HEIGHT)
+        local notWideEnough = (d.maxX - d.minX < terrain.MIN_DEPOSIT_WIDTH)
+        local notDeepEnough = (d.maxY - d.minY < terrain.MIN_DEPOSIT_HEIGHT)
+        if (atLeftEdge or atRightEdge or atTopAndShallow or notWideEnough or notDeepEnough) then
+            -- fill it with dirt
+            local x, y = PixelSet.any(d.filled)
+            terrain:floodfill(x, y, TERRAIN_DIRT_ALPHA_MIN, TERRAIN_DIRT_COLOR)
+        end
+    end
+end
+
+PixelSet = {}
+
+function PixelSet.add(s, x, y)
+    local key=x..':'..y
+    s[key]=true
+end
+
+function PixelSet.contains(s, x, y)
+    local key=x..':'..y
+    return (s[key] ~= nil)
+end
+
+function PixelSet.any(s)
+    local key
+    for k in pairs(s) do
+        key = k
+        break
+    end
+    local r = key:split(":")
+    return tonumber(r[1]), tonumber(r[2])
+end
+
+function PixelSet.addPixelSet(dest, source)
+    for k,v in pairs(source) do
+        dest[k] = v
     end
 end
 
@@ -1390,7 +1475,7 @@ function terrain:floodfill(x, y, a, pixel)
     local Queue={}
     Queue.__index=Queue
     function Queue:new()
-        return setmetatable({Q={},D={}}, Queue)
+        return setmetatable({Q={}}, Queue)
     end
     function Queue:put(x, y)
         local key=x..':'..y
@@ -1407,14 +1492,6 @@ function terrain:floodfill(x, y, a, pixel)
         local key=x..':'..y
         return self.Q[key]
     end
-    function Queue:setSeen(x, y)
-        local key=x..':'..y
-        self.D[key]=true
-    end
-    function Queue:seen(x, y)
-        local key=x..':'..y
-        return self.D[key]
-    end
     function Queue:size()
         return #self.Q
     end
@@ -1423,11 +1500,13 @@ function terrain:floodfill(x, y, a, pixel)
     local minY, maxY = y, y
     local pixelCount = 0
 
+    local seenPixels={}
+
     Q=Queue:new()
     function canFill(x, y, targetAlpha)
         if x < 0 or x >= self.width or y < 0 or y >= self.height then
             return false
-        elseif Q:seen(x, y) then
+        elseif PixelSet.contains(seenPixels, x, y) then
             return false
         else
             local pixel = {self.data:getPixel(x, y)}
@@ -1450,7 +1529,7 @@ function terrain:floodfill(x, y, a, pixel)
             r, g, b = pixel[1], pixel[2], pixel[3]
         end
         self.data:setPixel(x, y, r, g, b, a)
-        Q:setSeen(x, y)
+        PixelSet.add(seenPixels, x, y)
         pixelCount = pixelCount + 1
         if x < minX then minX = x end
         if x > maxX then maxX = x end
@@ -1472,7 +1551,10 @@ function terrain:floodfill(x, y, a, pixel)
     local pixel = {self.data:getPixel(x, y)}
     fill(x, y, pixel[4], a)
 
-    return minX, maxX, minY, maxY, pixelCount
+    return {
+        minX=minX, minY=minY, maxX=maxX, maxY=maxY,
+        size=pixelCount, filled=seenPixels
+    }
 end
 
 -- --------------------------------------------------------------------------------------
@@ -1513,7 +1595,7 @@ end
 -- PLAYER
 
 player = {
-    DRILL_MAX_DEPTH = terrain_to_world_height(terrain.HEIGHT), -- frackulons
+    DRILL_MAX_DEPTH = terrain_to_world_height(terrain.HEIGHT) - 1, -- frackulons
     DRILL_EXTEND_SPEED = 64, -- frackulons/second
     DRILL_RETRACT_SPEED = 128, -- frackulons/second
     PUMP_RATE = 1000/2, -- terrain units / second; an 1000 unit deposit will take four seconds
@@ -1802,12 +1884,12 @@ function player:startPumping()
     else
         -- floodfill to find the size of the deposit
         local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
-        local minX,maxX,minY,maxY,size = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
-        local duration = size / self.PUMP_RATE
-        self.pumpSize = size
-        self.pumpScore = math.floor(self.GAS_PRICE * size)
+        local fill = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
+        local duration = fill.size / self.PUMP_RATE
+        self.pumpSize = fill.size
+        self.pumpScore = math.floor(self.GAS_PRICE * fill.size)
         self.pumpProgress = 0
-        self.pumpBounds = {minX=minX, minY=minY, maxX=maxX, maxY=maxY}
+        self.pumpBounds = {minX=fill.minX, minY=fill.minY, maxX=fill.maxX, maxY=fill.maxY}
         print("start pumping, size: "..dump(size).." duration: "..dump(duration))
     end
     self.isPumping = true
@@ -1933,13 +2015,13 @@ end
 function player:finishPumping()
     soundStop("suck")
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
-    local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
+    local fill = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
     self:addScore(self.pumpScore)
     self.isPumping = false
     self.pumpProgress = 0
     self.autoRetracting = true
 
-    terrain:startCollapse(tx, minX, maxX, minY, maxY)
+    terrain:startCollapse(tx, fill.minX, fill.maxX, fill.minY, fill.maxY)
 
     local msg = "Income"
     messages:spawn("", {255,255,255,0})
