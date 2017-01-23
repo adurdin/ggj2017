@@ -605,6 +605,7 @@ function gameLevel:update(dt)
     if not debugVars.debugModeEnabled then
         gameLevel.timeRemaining = gameLevel.timeRemaining - dt
         if gameLevel.timeRemaining <= 0 then
+            gameOverLevel.score = player.score
             level.next = gameOverLevel
             return
         end
@@ -885,10 +886,10 @@ end
 gameOverLevel = {}
 
 function gameOverLevel:load()
-    -- load gameOver graphics
-    gameOverLevel.score = player.score
+    -- expect score to be set elsewhere
+    self.score = self.score or 0
 
-    -- load credits sprites
+    -- load gameOver graphics
     self.titleSize = 48
     self.nameSize = 36
     self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
@@ -928,12 +929,13 @@ function gameOverLevel:draw()
     love.graphics.rectangle("fill", 0, screen.HEIGHT-50, screen.WIDTH, screen.HEIGHT)
     love.graphics.setColor(255,255,255,255);
     menuImage = love.graphics.newImage("assets/fractormenu.png")
-    love.graphics.draw(menuImage, 0,screen.HEIGHT-420 + 4 + love.math.random(-0.1,  0.05))
+    local shakeAmount = 4.0 * (love.math.random(-0.1,  0.05))
+    love.graphics.draw(menuImage, 0,screen.HEIGHT-390 + shakeAmount)
 
     local y = 50
     y = self:printTitle("- GAME OVER -", y)
     y = self:blankLine(y)
-    y = self:printName("Your score: $"..toCurrency(gameOverLevel.score), y)
+    y = self:printName("Your score: $"..toCurrency(math.floor(self.score)), y)
     y = self:blankLine(y)
     y = self:printName("ESC to restart", y)
 end
@@ -1941,7 +1943,7 @@ function player:finishPumping()
 
     local msg = "Income"
     messages:spawn("", {255,255,255,0})
-    messages:spawn("$"..toCurrency(self.pumpScore)..": "..msg, {0, 255, 0, 255})
+    messages:spawn("$"..toCurrency(math.floor(self.pumpScore))..": "..msg, {0, 255, 0, 255})
 
     print("finish pumping")
 end
