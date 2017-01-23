@@ -16,14 +16,24 @@ competitors will be here in a minute! There's no time to waste! Get fracking!
 # CREDITS
 
 Aaron Dron – Team Wrangling / First Casualty
+
 Aidan Dodds — Civil & Industrial Engineering
+
 Andy Durdin — Geological Subduction
+
 David Farrell — Crowd Control
+
 Gordon Brown — Seismic Imaging
+
 Luke Drummond — Infrastructure / Second Casualty
 
+---
+
 Intrepid Polar Expedition:
+
 Gordon Brown, David Farrell, Aidan Dodds
+
+---
 
 Null Pointer font by Tom Murphy 7 (http://fonts.tom7.com/)
 
