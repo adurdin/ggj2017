@@ -298,12 +298,7 @@ function menuLevel:draw()
     y = self:blankLine(y)
     y = self:printName("SPACE to start", y)
     y = self:blankLine(y)
-    y = self:printTitle("Controls:", y)
-    y = self:printName("Left/Right ------------------------- Drive", y)
-    y = self:printName("Space ---  Scan for gas deposits", y)
-    y = self:printName("Up/Down --------------  Drill up/down", y)
-    y = self:printName("Space (hold) --- Pump gas from deposit", y)
-    y = self:blankLine(y)
+    y = self:printName("H for help and controls", y)
     y = self:printName("C for credits", y)
     y = self:printName("ESC to quit", y)
 end
@@ -340,15 +335,57 @@ helpLevel = {}
 helpLevel = {}
 
 function helpLevel:load()
-    -- load help graphics
+    -- load credits sprites
+    self.titleSize = 48
+    self.nameSize = 28
+    self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
+    self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+    self.titleColor = {255, 64, 32, 255}
+    self.nameColor = {255, 255, 255, 255}
+    self.shadowColor = {64, 64, 64, 255}
+    self.scrollY = screen.HEIGHT
+end
+
+function helpLevel:printTitle(text, y)
+    love.graphics.setFont(self.titleFont)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.titleColor, self.shadowColor)
+    return y + self.titleSize
+end
+
+function helpLevel:printName(text, y)
+    love.graphics.setFont(self.nameFont)
+    printCenteredShadowedText(text, screen.WIDTH / 2, y, self.nameColor, self.shadowColor)
+    return y + self.nameSize
+end
+
+function helpLevel:blankLine(y)
+    return y + self.titleSize
 end
 
 function helpLevel:draw()
     love.graphics.setFont(debugVars.debugFont)
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
-    love.graphics.setColor(0, 255, 255, 255)
-    love.graphics.print("TODO: help", 0, 0)
+    
+    -- nonsense from aaron
+    love.graphics.setColor(0,140,255)
+    love.graphics.rectangle("fill", 0, 0, screen.WIDTH, screen.HEIGHT-100)
+    love.graphics.setColor(5,162,9)
+    love.graphics.rectangle("fill", 0, screen.HEIGHT-100, screen.WIDTH, screen.HEIGHT-50)
+    love.graphics.setColor(123,69,23)
+    love.graphics.rectangle("fill", 0, screen.HEIGHT-50, screen.WIDTH, screen.HEIGHT)
+    love.graphics.setColor(255,255,255,255);
+    menuImage = love.graphics.newImage("assets/menu.png")
+    love.graphics.draw(menuImage, screen.WIDTH-500,screen.HEIGHT-500)
+
+    local y = 50
+    y = self:printTitle("Help:", y)
+    y = self:printName("Left/Right ------------------------- Drive", y)
+    y = self:printName("Space ---  Scan for gas deposits", y)
+    y = self:printName("Up/Down --------------  Drill up/down", y)
+    y = self:printName("Space (hold) --- Pump gas from deposit", y)
+    y = self:blankLine(y)
+    y = self:printName("Space to return to menu", y)
 end
 
 function helpLevel:keypressed(key)
