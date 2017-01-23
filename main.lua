@@ -172,6 +172,7 @@ function setWindow(width, height, fullscreen)
     love.window.setMode(width, height, {
         centered = true,
         fullscreen = fullscreen,
+        love.window.setTitle( "Frack The Planet - GGJ2017" ),
         vsync = true,
         resizable = false,
         centered = true,
