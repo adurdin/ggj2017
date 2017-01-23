@@ -886,7 +886,7 @@ function gameOverLevel:draw()
     love.graphics.rectangle("fill", 0, screen.HEIGHT-50, screen.WIDTH, screen.HEIGHT)
     love.graphics.setColor(255,255,255,255);
     menuImage = love.graphics.newImage("assets/fractormenu.png")
-    love.graphics.draw(menuImage, 0,screen.HEIGHT-420)
+    love.graphics.draw(menuImage, 0,screen.HEIGHT-420 + 4 + love.math.random(-0.1,  0.05))
 
     local y = 50
     y = self:printTitle("- GAME OVER -", y)
