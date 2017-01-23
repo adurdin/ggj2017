@@ -619,6 +619,9 @@ function gameLevel:update(dt)
             print("a deposit!")
             -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
             soundEmit("deposit")
+        elseif previousCanStartPumping and not canStartPumping then
+            -- moved the drill out of this deposit, so reset pumping progress
+            player.pumpProgress = 0
         end
         previousCanStartPumping = canStartPumping
 
@@ -1781,17 +1784,23 @@ function player:startPumping()
   
     soundEmit("pumping")
     soundEmit("suck")
-  
-    -- floodfill to find the size of the deposit
-    local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
-    local minX,maxX,minY,maxY,size = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
-    local duration = size / self.PUMP_RATE
-    self.pumpSize = size
-    self.pumpScore = math.floor(self.GAS_PRICE * size)
-    self.pumpProgress = 0
-    self.pumpBounds = {minX=minX, minY=minY, maxX=maxX, maxY=maxY}
+
+    -- resume pumping if we can
+    if self.pumpProgress > 0 then
+        local duration = self.pumpSize / self.PUMP_RATE * (1 - self.pumpProgress)
+        print("resume pumping, size: "..dump(size).." duration: "..dump(duration))
+    else
+        -- floodfill to find the size of the deposit
+        local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
+        local minX,maxX,minY,maxY,size = terrain:floodfill(tx, ty, TERRAIN_GAS_ALPHA)
+        local duration = size / self.PUMP_RATE
+        self.pumpSize = size
+        self.pumpScore = math.floor(self.GAS_PRICE * size)
+        self.pumpProgress = 0
+        self.pumpBounds = {minX=minX, minY=minY, maxX=maxX, maxY=maxY}
+        print("start pumping, size: "..dump(size).." duration: "..dump(duration))
+    end
     self.isPumping = true
-    print("start pumping, size: "..dump(size).." duration: "..dump(duration))
 end
 
 function player:cancelPumping()
@@ -1896,6 +1905,7 @@ function player:finishPumping()
     local minX, maxX, minY, maxY, _ = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
     self:addScore(self.pumpScore)
     self.isPumping = false
+    self.pumpProgress = 0
     self.autoRetracting = true
 
     terrain:startCollapse(tx, minX, maxX, minY, maxY)
