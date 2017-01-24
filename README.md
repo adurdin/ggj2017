@@ -1,5 +1,7 @@
 # FRACK the PLANET
 
+Version 1.1
+
 A game made for Global Game Jam 2017.
 
 # YOUR ORDERS
