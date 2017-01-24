@@ -64,6 +64,8 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
         }
     }
     
+    vec4 intermediateColourPixel = finalColourPixel;
+
     float normalizedTime = (currentTime / maxTime);
     float positionInRadius = (1.0f - normalizedTime) * radius;
     
@@ -77,21 +79,21 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
     
     float normalizedDistance = distance / radius;
     
+    vec4 final = finalColourPixel;
     if (terrainType != M_TERRAIN_TYPE_SKY) {
-        if (currentTime > 0.0f) {
+        if (currentTime > -1.0f) {
             if (abs(distance - positionInRadius) < 0.001f) {
-                return vec4(0.0f, 1.0f, 0.0f, 1.0f);
+                final = vec4(0.0f, 1.0f, 0.0f, 1.0f);
             } else if (distance <= positionInRadius) {
                 if (terrainType == M_TERRAIN_TYPE_GAS || terrainType == M_TERRAIN_TYPE_VOID) {
-                    return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                    final = vec4(0.0f, 0.0f, 0.0f, 1.0f);
                 } else {
                     float ripple = abs(sin((normalizedDistance + normalizedTime) * 2 * 8 * M_PI));
-                    return finalColourPixel * vec4(0.0f, ripple, 0.0f, 1.0f);
+                    final = finalColourPixel * vec4(0.0f, ripple, 0.0f, 1.0f);
                 }
-            } else {
-                return finalColourPixel;
             }
         }
     }
-    return finalColourPixel;
+    final = mix(final, intermediateColourPixel, max(0.0f, -currentTime));
+    return final;
 }

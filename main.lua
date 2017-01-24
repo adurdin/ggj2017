@@ -1588,8 +1588,8 @@ sonar = {}
 function sonar:update(dt)
 
     sonar.currentTime = sonar.currentTime - dt
-    if sonar.currentTime < 0.0 then
-        sonar.currentTime = 0.0
+    if sonar.currentTime < -1.0 then
+        sonar.currentTime = -1.0
     end
 
 end
