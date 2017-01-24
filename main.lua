@@ -1701,7 +1701,7 @@ function player:update(dt)
         self.vel = 0
     end
 
-    if player.autoRetracting or (self.isDrilling and not self.isPumping and not spacePressed) then
+    if (self.isDrilling and not self.isPumping and not spacePressed) then
         -- can only move the drill up and down while drilling, and not pumping
         if extendDrill and not retractDrill then
             self:extendDrill(dt)
