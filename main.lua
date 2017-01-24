@@ -60,6 +60,7 @@ sounds = {
     drill_down = {"assets/sounds/drill_down.wav", nil, false},
     pumping    = {"assets/sounds/pumping.wav", nil, false},
     suck    = {"assets/sounds/suck.wav", nil, true},
+    tick    = {"assets/sounds/tick.wav", nil, false},
     music   = {"assets/music.ogg", nil, true}
 }
 
@@ -633,11 +634,17 @@ end
 function gameLevel:update(dt)
     -- count down until game over (except in debug mode)
     if not debugVars.debugModeEnabled then
+        local previousSecondsLeft = math.ceil(gameLevel.timeRemaining)
         gameLevel.timeRemaining = gameLevel.timeRemaining - dt
+        local secondsLeft = math.ceil(gameLevel.timeRemaining)
         if gameLevel.timeRemaining <= 0 then
             gameOverLevel.score = player.score
             level.next = gameOverLevel
             return
+        else
+            if secondsLeft < 11 and previousSecondsLeft ~= secondsLeft then
+                soundEmit("tick", nil, 1.0 + 0.04 * (11 - secondsLeft))
+            end
         end
     end
 
@@ -894,9 +901,15 @@ function gameLevel:draw()
     -- draw game time remaining
     love.graphics.push()
     love.graphics.setFont(gameLevel.timerFont)
-    local secondsLeft = math.floor(gameLevel.timeRemaining)
+    local secondsLeft = math.ceil(gameLevel.timeRemaining)
     local text = tostring(secondsLeft)
-    printCenteredShadowedText(text, screen.WIDTH / 2, 40, {0, 0, 0, 255}, {255, 255, 255, 192})
+    local shakeX, shakeY = 0, 0
+    if secondsLeft < 11 then
+        local shakeMagnitude = 1.5 * (11 - secondsLeft)
+        shakeX = love.math.random(-shakeMagnitude, shakeMagnitude)
+        shakeY = love.math.random(-shakeMagnitude, shakeMagnitude)
+    end
+    printCenteredShadowedText(text, screen.WIDTH / 2 + shakeX, 40 + shakeY, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
 
     if debugVars.renderTerrainBuffer then
