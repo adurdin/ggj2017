@@ -1886,7 +1886,8 @@ function player:retractDrill(dt)
         drillSpeed = player.DRILL_RETRACT_SPEED_DIRT
     end
     player.drillDepth = math.max(0, player.drillDepth - (drillSpeed * dt))
-    if player.drillDepth == 0 then
+    if player.drillDepth <= 5 then
+        player.drillDepth = 0
         player.isDrilling = false
         player.autoRetracting = false
     end
