@@ -1699,7 +1699,7 @@ function player:update(dt)
     end
 
     -- Emit sonar on space, if not drilling
-    if pingSonar and not player.isDrilling and sonar.currentTime == 0.0 then
+    if pingSonar and not player.isDrilling and sonar.currentTime <= 0.0 then
         screenWidth = love.graphics.getWidth()
         screenHeight = love.graphics.getHeight()
         sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
