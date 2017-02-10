@@ -1187,6 +1187,20 @@ function terrain:create()
     self.data:mapPixel(generateTerrainPixel)
     self:removeUnusableDeposits()
 
+    if false then
+        -- count how much gas there is (tends to be from 12% to 20% of terrain pixels)
+        local totalSize = self.WIDTH * self.HEIGHT
+        local totalGas = 0
+        function countGasPixels(x, y, r, g, b, a)
+            if a == TERRAIN_GAS_ALPHA then
+                totalGas = totalGas + 1
+            end
+            return r, g, b, a
+        end
+        self.data:mapPixel(countGasPixels)
+        print("gas: "..dump(totalGas).."/"..dump(totalSize).." ("..dump(totalGas / totalSize * 100).." %)")
+    end
+
     self.image = love.graphics.newImage(self.data)
     self.image:setFilter("nearest", "nearest")
     self.image:setWrap("repeat", "clamp")
