@@ -246,6 +246,25 @@ function string:split(sSeparator, nMax, bRegexp)
     return aRecord
 end
 
+function isGamepadDown(button)
+    local joystick = love.joystick.getJoysticks()[1]
+    if joystick then
+        return joystick:isGamepadDown(button)
+    else
+        return false
+    end
+end
+
+function getGamepadAxis(axis)
+    local joystick = love.joystick.getJoysticks()[1]
+    if joystick then
+        return joystick:getGamepadAxis(axis)
+    else
+        return 0
+    end
+end
+
+
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -1686,12 +1705,17 @@ function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
     -- control inputs
-    local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w"))
-    local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
-    local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a"))
-    local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d"))
-    local pingSonar = love.keyboard.isDown("space")
-    local pumpGas = love.keyboard.isDown("space")
+    local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w")
+        or isGamepadDown("dpup") or (getGamepadAxis("lefty") < -0.4) or (getGamepadAxis("righty") < -0.4))
+    local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s")
+        or isGamepadDown("dpdown") or (getGamepadAxis("lefty") > 0.4) or (getGamepadAxis("righty") > 0.4))
+    local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a")
+        or isGamepadDown("dpleft") or (getGamepadAxis("leftx") < -0.4) or (getGamepadAxis("rightx") < -0.4))
+    local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d")
+        or isGamepadDown("dpright") or (getGamepadAxis("leftx") > 0.4) or (getGamepadAxis("rightx") > 0.4))
+    local pingSonar = (love.keyboard.isDown("space")
+        or isGamepadDown("a") or isGamepadDown("b") or isGamepadDown("x") or isGamepadDown("y"))
+    local pumpGas = pingSonar -- same buttons
 
     -- make 'ch'ching' noises
     if self.isPumping and love.math.random(25) == 1 then
