@@ -16,8 +16,8 @@ vec4 effect(vec4 color, Image texture, vec2 textureCoords, vec2 screenCoords)
       textureCoords += vec2(-0.5f, -0.5f);
       textureCoords *= vec2(2.88f, 1.0f);
       float radius = 1.414f - length(textureCoords);
-      float angle = (M_PI + atan(textureCoords.y, textureCoords.x)) / (2 * M_PI);
-      textureCoords = vec2(angle + polarRotation, radius * 0.6f);
+      float angle = M_PI + atan(textureCoords.y, textureCoords.x);
+      textureCoords = vec2((angle + polarRotation) / (2 * M_PI), radius * 0.6f);
     }
 
     return Texel(texture, textureCoords);

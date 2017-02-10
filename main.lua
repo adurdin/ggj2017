@@ -730,7 +730,8 @@ function gameLevel:update(dt)
             else -- 800 x 600
                 camera.scale = 2.0
             end
-            camera.positionX = player.x - (screen.WIDTH / 2.0) / camera.scale
+            local centerX = (player.x - (player.direction * player.cameraOffset)) % world.WIDTH
+            camera.positionX = centerX - (screen.WIDTH / 2.0) / camera.scale
             camera.positionY = 100.0
         end
     end
@@ -859,15 +860,15 @@ function gameLevel:draw()
     end
     
     -- hack starting rotation
-    local startingRotation = 4.6 -- math.pi * 3 / 4
-    local playerRotation = player.x / world.WIDTH * 2 * math.pi
+    local startingRotation = -math.pi / 2
+    local playerRotation = ((player.x - (player.direction * player.cameraOffset)) / world.WIDTH) * 2 * math.pi
     
     -- draw game world to screen
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
     drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
-    drawShader:send("polarRendering",debugVars.polarRenderingEnabled)
-    drawShader:send("polarRotation", (startingRotation + playerRotation) / (math.pi * 2))
+    drawShader:send("polarRendering",debug.polarRendering)
+    drawShader:send("polarRotation", (startingRotation + playerRotation))
     love.graphics.setShader(drawShader)
     love.graphics.draw(intermediateCanvas, 0, 0, 0, fullScreenCorrection, fullScreenCorrection)
     love.graphics.setShader()
@@ -1665,6 +1666,9 @@ function player:create()
     __, __, self.drillShaftQuadWidth, self.drillShaftQuadHeight = self.drillShaftQuad:getViewport()
     self.drillBitQuad = love.graphics.newQuad(20, 0, 7, 7, imageWidth, imageHeight)
     __, __, self.drillBitQuadWidth, self.drillBitQuadHeight = self.drillBitQuad:getViewport()
+
+    self.trailerHitchOffset = (1 + math.floor(self.playerQuadWidth / 2))
+    self.cameraOffset = (self.playerQuadWidth - self.trailerQuadWidth) / 2
 end
 
 function player:update(dt)
@@ -1776,11 +1780,6 @@ function player:update(dt)
         if (math.abs(self.vel) < 0.1) then
             self.vel = 0
         end
-
-        -- offset a bit when changing direction so it looks less weird
-        if directionChanged then
-            self.x = (self.x + self.direction * self.playerQuadWidth * 0.5) % world.WIDTH
-        end
     end
 
     -- set our height to the surface height
@@ -1795,13 +1794,13 @@ function player:update(dt)
     local lerpBugFixed = false
     if lerpBugFixed then
         -- lerp
-        local newTrailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
+        local newTrailerX = (self.x - self.direction * self.trailerHitchOffset) % world.WIDTH
         local limit = dt * 100
         self.trailerX = (self.trailerX + clamp(-limit, newTrailerX % world.WIDTH - self.trailerX, limit))
         self.trailerY = terrain:worldSurface(self.trailerX)
     else
         -- just flip, don't lerp
-        self.trailerX = (self.x - self.direction * (1 + math.floor(self.playerQuadWidth / 2))) % world.WIDTH
+        self.trailerX = (self.x - self.direction * self.trailerHitchOffset) % world.WIDTH
     end
     self.trailerY, nx, ny = terrain:worldSurface(self.trailerX, 5)
     self.trailerRot = lerp(self.trailerRot, -math.atan2(nx, ny), 0.1)
@@ -1833,12 +1832,14 @@ function player:draw()
 
     -- draw the fractor (three copies because of world wrapping)
     local xs = {self.x, self.x - world.WIDTH, self.x + world.WIDTH}
+    local xShake = love.math.random(-self.vel / 500, self.vel / 500)
+    local yShake = love.math.random(-0.1,  0.05)
     for i=1,3 do
         love.graphics.draw(
             self.image,
             self.playerQuad,
-            xs[i]      + love.math.random(-self.vel / 500, self.vel / 500),
-            self.y + 4 + love.math.random(-0.1,  0.05),
+            xs[i]      + xShake,
+            self.y + 4 + yShake,
             self.rot, -- rotation
             self.direction, 1, -- scale
             (self.playerQuadWidth / 2), self.playerQuadHeight)
@@ -1846,13 +1847,14 @@ function player:draw()
 
     -- draw the derrick (three copies because of world wrapping)
     local xs = {self.derrickX, self.derrickX - world.WIDTH, self.derrickX + world.WIDTH}
+    local xShake = love.math.random(-self.vel / 500, self.vel / 500)
     local derrickY = self.derrickY
     if self.isDrilling then derrickY = derrickY + love.math.random(-0.3, 0.3) end
     for i=1,3 do
         love.graphics.draw(
             self.image,
             self.derrickQuad,
-            xs[i] + love.math.random(-self.vel / 500, self.vel / 500),
+            xs[i] + xShake,
             derrickY,
             0, -- rotation
             self.direction, 1, -- scale
