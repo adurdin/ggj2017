@@ -2021,6 +2021,7 @@ function player:addPumpParticles()
         local tx, ty = randomScaledPointInRectWithOffset(centerTX, centerTY,
             rectTWidth, rectTHeight, self.pumpProgress, pumpTX, pumpTY)
         tx, ty = math.floor(tx), math.floor(ty)
+        ty = math.min(ty, terrain.HEIGHT - 1)
 
         -- check if it's gas
         local _, _, _, a = terrain:sample(tx, ty)
