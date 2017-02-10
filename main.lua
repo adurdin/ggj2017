@@ -1,4 +1,14 @@
-debugVars = {}
+debug = {
+    CHEATS = false,
+    -- not cheats
+    showFPSCounter = false, -- ctrl-f to toggle
+    -- cheats
+    timerPaused = false,
+    revealGround = false,
+    polarRendering = true,
+    renderTerrainBuffer = false,
+    cameraControl = false,
+}
 
 terrain = {
     WIDTH = 1024,
@@ -332,7 +342,7 @@ function menuLevel:blankLine(y)
 end
 
 function menuLevel:draw()
-    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setFont(debug.font)
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
     
@@ -417,7 +427,7 @@ function helpLevel:blankLine(y)
 end
 
 function helpLevel:draw()
-    love.graphics.setFont(debugVars.debugFont)
+    love.graphics.setFont(debug.font)
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
     
@@ -633,7 +643,7 @@ end
 
 function gameLevel:update(dt)
     -- count down until game over (except in debug mode)
-    if not debugVars.debugModeEnabled then
+    if not debug.timerPaused then
         local previousSecondsLeft = math.ceil(gameLevel.timeRemaining)
         gameLevel.timeRemaining = gameLevel.timeRemaining - dt
         local secondsLeft = math.ceil(gameLevel.timeRemaining)
@@ -652,45 +662,6 @@ function gameLevel:update(dt)
 
     -- update terrain
     terrain:update(dt)
-
-    -- check to see if player wants to pump
-    if player.isDrilling then
-        -- see if there's a deposit at the drill
-        local canStartPumping = player:canStartPumping()
-        if not previousCanStartPumping and canStartPumping then
-            print("a deposit!")
-            -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
-            soundEmit("deposit")
-        elseif previousCanStartPumping and not canStartPumping then
-            -- moved the drill out of this deposit, so reset pumping progress
-            player.pumpProgress = 0
-        end
-        previousCanStartPumping = canStartPumping
-
-        -- see if the player is trying to pump
-        local spacePressed = love.keyboard.isDown("space")
-        if spacePressed and not player.isPumping then
-            if canStartPumping then
-                player:startPumping()
-            else
-                -- TODO: audio feedback that there's nothing to pump here
-                player:addRockParticles()
-            end
-        elseif not spacePressed and player.isPumping then
-            player:cancelPumping()
-        elseif spacePressed and player.isPumping then
-            -- keep pumping while space is held
-            -- increment pumping progress
-            player.pumpProgress = math.min(player.pumpProgress +
-                (player.PUMP_RATE / player.pumpSize  * dt), 1.0)
-            -- show feedback
-            player:addPumpParticles()
-            -- check for completion
-            if player.pumpProgress == 1.0 then
-                player:finishPumping()
-            end
-        end
-    end
 
     -- update player
     player:update(dt)
@@ -714,41 +685,53 @@ function gameLevel:update(dt)
     messages:update(dt)
 
     -- update camera position
-    
-    if debugVars.cameraControlEnabled then
-        if screen.WIDTH == 1680 and screen.HEIGHT == 1050 then
-            camera.scale = 3.0
-        else
-            camera.scale = 2.0
+    if debug.cameraControl then
+        local prevScale = camera.scale
+        local prevPositionX = camera.positionX
+        local prevPositionY = camera.positionY
+
+        if love.keyboard.isDown("f") then
+            camera.scale = camera.scale + 0.01
+        elseif love.keyboard.isDown("r") then
+            camera.scale = camera.scale - 0.01
+        elseif love.keyboard.isDown("j") then
+            camera.positionX = camera.positionX + 5
+        elseif love.keyboard.isDown("g") then
+            camera.positionX = camera.positionX - 5
+        elseif love.keyboard.isDown("h") then
+            camera.positionY = camera.positionY + 5
+        elseif love.keyboard.isDown("y") then
+            camera.positionY = camera.positionY - 5
+        elseif love.keyboard.isDown("z") then
+            camera.scale = 1.0
+            camera.positionX = 0.0
+            camera.positionY = 0.0
         end
-        camera.positionX = player.x - (screen.WIDTH / 2.0) / camera.scale
-        camera.positionY = 100.0
+
+        if camera.scale ~= prevScale or camera.positionX ~= prevPositionX or camera.positionY ~= prevPositionY then
+            print("scale: "..dump(camera.scale).." x: "..dump(camera.positionX).." y: "..dump(camera.positionY)
+                .." WIDTH: "..dump(screen.WIDTH).." HEIGHT: "..dump(screen.HEIGHT))
+        end
     else
-        if false then
-            if love.keyboard.isDown("r") then
-                camera.scale = camera.scale + 0.01
-            elseif love.keyboard.isDown("f") then
-                camera.scale = camera.scale - 0.01
-            elseif love.keyboard.isDown("t") then
-                camera.positionX = camera.positionX + 5
-            elseif love.keyboard.isDown("g") then
-                camera.positionX = camera.positionX - 5
-            elseif love.keyboard.isDown("y") then
-                camera.positionY = camera.positionY + 5
-            elseif love.keyboard.isDown("h") then
-                camera.positionY = camera.positionY - 5
-            end
-            print(" s: "..dump(camera.scale).." x: "..dump(camera.positionX).." y: "..dump(camera.positionY))
-        else
+        -- Position the camera according to screen size
+        if debug.polarRendering then
             if screen.WIDTH == 1680 and screen.HEIGHT == 1050 then
                 camera.scale = 1.92
                 camera.positionX = 280
                 camera.positionY = -300
-            else
+            else -- 800 x 600
                 camera.scale = 1.3
                 camera.positionX = 420.0
                 camera.positionY = -245.0
             end
+        else
+            if screen.WIDTH == 1680 and screen.HEIGHT == 1050 then
+                camera.scale = 3.0
+            else -- 800 x 600
+                camera.scale = 2.0
+            end
+            camera.positionX = player.x - (screen.WIDTH / 2.0) / camera.scale
+            camera.positionY = 100.0
         end
     end
 end
@@ -760,52 +743,61 @@ function gameLevel:keypressed(key, unicode)
         level.next = menuLevel
     end
 
-    if false and love.keyboard.isDown("p") then
-        if debugVars.debugModeEnabled == false then
-            debugVars.debugModeEnabled = true
-        else
-            debugVars.debugModeEnabled = false
+    -- Cheat/debug keys
+    if debug.CHEATS then
+        if key == "p" then
+            debug.timerPaused = not debug.timerPaused
+            print("timerPaused: "..dump(debug.timerPaused))
+        elseif key == "1" then
+            debug.revealGround = not debug.revealGround
+            print("reveal ground: "..dump(debug.revealGround))
+        elseif key == "2" then
+            debug.polarRendering = not debug.polarRendering
+            print("polar rendering: "..dump(debug.polarRendering))
+        elseif key == "3" then
+            debug.renderTerrainBuffer = not debug.renderTerrainBuffer
+            print("terrain debug: "..dump(debug.renderTerrainBuffer))
+        elseif key == "4" then
+            debug.cameraControl = not debug.cameraControl
+            print("camera control: "..dump(debug.cameraControl))
+            if debug.cameraControl then
+                print("  r: zoom in")
+                print("  f: zoom out")
+                print("  y: move up")
+                print("  g: move left")
+                print("  h: move down")
+                print("  j: move right")
+                print("  z: reset")
+            end
+        elseif key == "5" then
+            soundEmit("test")
+            print("sound test.")
+        elseif key == "6" then
+            messages:spawn("text", {255, 128, 0, 255})
+            print("message test.")
         end
-    end
-    
-    if false and love.keyboard.isDown("r") then
-        if debugVars.polarRenderingEnabled == false then
-            debugVars.polarRenderingEnabled = true
+    else
+        -- toggle cheats when you type the magic word
+        if debug.magic == nil and string.byte(key) == 0x78 then
+            debug.magic = 1
+        elseif debug.magic == 1 and string.byte(key) == 0x79 then
+            debug.magic = 2
+        elseif debug.magic == 2 and string.byte(key) == 0x7A then
+            debug.magic = 3
+        elseif debug.magic == 3 and string.byte(key) == 0x7A then
+            debug.magic = 4
+        elseif debug.magic == 4 and string.byte(key) == 0x79 then
+            debug.magic = nil
+            debug.CHEATS = not debug.CHEATS
+            print("CHEATS: "..dump(debug.CHEATS))
         else
-            debugVars.polarRenderingEnabled = false
+            debug.magic = nil
         end
-    end
-    
-    if false and love.keyboard.isDown("c") then
-        if debugVars.cameraControlEnabled == false then
-            debugVars.cameraControlEnabled = true
-        else
-            debugVars.cameraControlEnabled = false
-            camera.scale = 1.0
-            camera.positionX = 0.0
-            camera.positionY = 0.0
-        end
-    end
-
-    if not player.isDrilling and key == "space" then
-        screenWidth = love.graphics.getWidth()
-        screenHeight = love.graphics.getHeight()
-        sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
-        sonar.currentTime = sonar.maxTime;
-        soundEmit("sonar")
     end
 
     -- toggle FPS counter on ctrl+f
     if key == "f" and isCtrlPressed() then
-        debugVars.showFPSCounter = not debugVars.showFPSCounter
-    end
-
-    if key == "v" then
-        soundEmit("test")
-    end
-
-    if key == "o" then
-        messages:spawn("text", {255, 128, 0, 255})
+        debug.showFPSCounter = not debug.showFPSCounter
     end
 end
 
@@ -822,7 +814,7 @@ function gameLevel:draw()
     sonarShader:send("WORLD_HEIGHT", world.HEIGHT)
     sonarShader:send("WORLD_TERRAIN_Y", world.TERRAIN_Y)
     sonarShader:send("WORLD_TERRAIN_SIZE", world.TERRAIN_SIZE)
-    sonarShader:send("debugModeEnabled", debugVars.debugModeEnabled)
+    sonarShader:send("debugModeEnabled", debug.revealGround)
 
     local prevBlendMode = {love.graphics.getBlendMode()}
     love.graphics.setBlendMode("replace", "premultiplied")
@@ -848,7 +840,7 @@ function gameLevel:draw()
     love.graphics.setCanvas()
 
     -- diplay rectangles in corners of world space
-    if debugVars.debugModeEnabled then
+    if debug.revealGround then
         love.graphics.setCanvas(intermediateCanvas)
         love.graphics.setColor(255, 0, 0, 255)
         love.graphics.rectangle("fill", 5, 5, 45, 45)
@@ -912,7 +904,7 @@ function gameLevel:draw()
     printCenteredShadowedText(text, screen.WIDTH / 2 + shakeX, 40 + shakeY, {0, 0, 0, 255}, {255, 255, 255, 192})
     love.graphics.pop()
 
-    if debugVars.renderTerrainBuffer then
+    if debug.renderTerrainBuffer then
         terrain:draw(-512, 0, false)
     end
 end
@@ -1011,12 +1003,7 @@ end
 
 function love.load()
     -- set some default values
-    debugVars.debugFont = love.graphics.newFont(16)
-    debugVars.showFPSCounter = false
-    debugVars.debugModeEnabled = false
-    debugVars.polarRenderingEnabled = true
-    debugVars.cameraControlEnabled = false
-    debugVars.renderTerrainBuffer = false
+    debug.font = love.graphics.newFont(16)
 
     -- set up the window
     setWindow(screen.WIDTH, screen.HEIGHT, screen.DEFAULT_FULLSCREEN)
@@ -1056,14 +1043,14 @@ end
 
 function love.keypressed(key, unicode)
     -- toggle fullscreen on alt-enter
-    if key == "return" and isAltPressed then
+    if key == "return" and isAltPressed() then
         local _, _, flags = love.window.getMode()
         setWindow(screen.WIDTH, screen.HEIGHT, not flags.fullscreen)
         return
     end
 
     -- quit on ctrl-q or cmd-q
-    if key == "q" and (isCtrlPressed or isCmdPressed) then
+    if key == "q" and (isCtrlPressed() or isCmdPressed()) then
         love.event.quit()
         return
     end
@@ -1087,9 +1074,9 @@ function love.draw()
     love.graphics.pop()
 
     -- show the fps counter
-    if debugVars.showFPSCounter then
+    if debug.showFPSCounter then
         love.graphics.push()
-        love.graphics.setFont(debugVars.debugFont)
+        love.graphics.setFont(debug.font)
         love.graphics.setColor(0, 0, 0, 255)
         love.graphics.rectangle("fill", 0, 0, 70, 20)
         love.graphics.setColor(255, 255, 0, 255)
@@ -1683,34 +1670,83 @@ end
 function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
-    -- make 'ch'ching' noises
-    if self.isPumping and love.math.random(25) == 1 then
-        self:addScore(love.math.random() * 1000)
-    end
-
     -- control inputs
     local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w"))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s"))
     local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a"))
     local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d"))
-    local spacePressed = love.keyboard.isDown("space")
+    local pingSonar = love.keyboard.isDown("space")
+    local pumpGas = love.keyboard.isDown("space")
+
+    -- make 'ch'ching' noises
+    if self.isPumping and love.math.random(25) == 1 then
+        self:addScore(love.math.random() * 1000)
+    end
+
+    -- Emit sonar on space, if not drilling
+    if pingSonar and not player.isDrilling and sonar.currentTime == 0.0 then
+        screenWidth = love.graphics.getWidth()
+        screenHeight = love.graphics.getHeight()
+        sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
+        sonar.currentTime = sonar.maxTime;
+        soundEmit("sonar")
+    end
 
     -- start drilling when the player presses down
-    if extendDrill and math.abs(self.vel) < 30 and not self.isDrilling and not self.isPumping and not spacePressed then
+    if extendDrill and not self.isDrilling and not self.isPumping and math.abs(self.vel) < 30 then
         self.isDrilling = true
         self.vel = 0
     end
 
-    if (self.isDrilling and not self.isPumping and not spacePressed) then
+    -- check to see if we should be pumping
+    if self.isDrilling then
+        -- see if there's a deposit at the drill
+        local canStartPumping = player:canStartPumping()
+        if not previousCanStartPumping and canStartPumping then
+            print("a deposit!")
+            -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
+            soundEmit("deposit")
+        elseif previousCanStartPumping and not canStartPumping then
+            -- moved the drill out of this deposit, so reset pumping progress
+            player.pumpProgress = 0
+        end
+        previousCanStartPumping = canStartPumping
+
+        -- see if the player is trying to pump
+        if pumpGas and not player.isPumping then
+            if canStartPumping then
+                player:startPumping()
+            else
+                -- TODO: audio feedback that there's nothing to pump here
+                player:addRockParticles()
+            end
+        elseif not pumpGas and player.isPumping then
+            player:cancelPumping()
+        elseif pumpGas and player.isPumping then
+            -- TODO: do pumping sounds or effects or whatever
+            -- keep pumping while space is held
+            -- increment pumping progress
+            player.pumpProgress = math.min(player.pumpProgress +
+                (player.PUMP_RATE / player.pumpSize  * dt), 1.0)
+            -- show feedback
+            player:addPumpParticles()
+            -- check for completion
+            if player.pumpProgress == 1.0 then
+                player:finishPumping()
+            end
+        end
+    end
+
+    -- move drill up or down
+    if (self.isDrilling and not self.isPumping) then
         -- can only move the drill up and down while drilling, and not pumping
         if extendDrill and not retractDrill then
             self:extendDrill(dt)
         elseif not extend and retractDrill then
             self:retractDrill(dt)
         end
-    elseif self.isDrilling and self.isPumping and not spacePressed then
-        -- can't move or drill
-        -- TODO: do pumping sounds or effects or whatever
+    elseif self.isDrilling and self.isPumping then
+        -- can't move or drill while pumping
     else
         -- can move and ping when not drilling or pumping
         local x = 0
