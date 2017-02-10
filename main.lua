@@ -27,14 +27,10 @@ world = {
 }
 
 screen = {
-    -- NOTE: on andy's macbook, use 1680x1050 for fullscreen
-  WIDTH = 800,
-  HEIGHT = 600,
-  DEFAULT_FULLSCREEN = false
+  DEFAULT_FULLSCREEN = false,
+  WINDOWED_WIDTH = 1024,
+  WINDOWED_HEIGHT = 768,
 }
-
--- minimum scale fills the height of the screen
-SCREEN_CAMERA_SCALE = (screen.HEIGHT / world.HEIGHT)
 
 camera = {
     positionX = 0.0, -- world space coordinate that is top left of camera
@@ -182,22 +178,18 @@ function isAltPressed()
     return (love.keyboard.isDown("lalt") or love.keyboard.isDown("ralt"))
 end
 
-function setWindow(width, height, fullscreen)
-    local previousX, previousY, display = love.window.getPosition()
-    local previousWidth, previousHeight, previousFlags = love.window.getMode()
+function setWindow(fullscreen)
+    local _, _, display = love.window.getPosition()
+
+    -- use full screen size, or windowed size
     local desktopWidth, desktopHeight = love.window.getDesktopDimensions(display)
-
-    if width == nil then width = previousWidth end
-    if height == nil then height = previousHeight end
-    if fullscreen == nil then fullscreen = previousFlags.fullscreen end
-
-    -- ignore args, and just hardcode sizes here, until we can calculate screen sizes
+    local width, height
     if fullscreen then
         width = desktopWidth
         height = desktopHeight
     else
-        width = 800
-        height = 600
+        width = screen.WINDOWED_WIDTH
+        height = screen.WINDOWED_HEIGHT
     end
 
     -- make sure the window can fit on the screen
@@ -210,7 +202,7 @@ function setWindow(width, height, fullscreen)
         fullscreen = fullscreen,
         love.window.setTitle( "Frack The Planet - GGJ2017" ),
         vsync = true,
-        resizable = false,
+        resizable = true,
         centered = true,
         borderless = fullscreen,
         display = display,
@@ -715,24 +707,16 @@ function gameLevel:update(dt)
     else
         -- Position the camera according to screen size
         if debug.polarRendering then
-            if screen.WIDTH == 1680 and screen.HEIGHT == 1050 then
-                camera.scale = 1.92
-                camera.positionX = 280
-                camera.positionY = -300
-            else -- 800 x 600
-                camera.scale = 1.3
-                camera.positionX = 420.0
-                camera.positionY = -245.0
-            end
+            local hudSize = 100
+            camera.scale = screen.HEIGHT / world.HEIGHT
+            camera.positionX = 0
+            camera.positionY = (-screen.HEIGHT / 2 - hudSize / 2) / camera.scale
         else
-            if screen.WIDTH == 1680 and screen.HEIGHT == 1050 then
-                camera.scale = 3.0
-            else -- 800 x 600
-                camera.scale = 2.0
-            end
+            local groundBelowTerrain = 30
             local centerX = (player.x - (player.direction * player.cameraOffset)) % world.WIDTH
+            camera.scale = 1.667 * screen.HEIGHT / world.HEIGHT
             camera.positionX = centerX - (screen.WIDTH / 2.0) / camera.scale
-            camera.positionY = 100.0
+            camera.positionY = (world.TERRAIN_Y + world.TERRAIN_SIZE + groundBelowTerrain) - screen.HEIGHT / camera.scale
         end
     end
 end
@@ -865,6 +849,8 @@ function gameLevel:draw()
     
     -- draw game world to screen
     local fullScreenCorrection = (screen.HEIGHT / world.HEIGHT)
+    drawShader:send("screenAspect", screen.WIDTH / screen.HEIGHT)
+    drawShader:send("worldAspect", world.WIDTH / world.HEIGHT)
     drawShader:send("cameraPosition", {camera.positionX / world.WIDTH, camera.positionY / world.HEIGHT})
     drawShader:send("cameraScale", camera.scale / fullScreenCorrection)
     drawShader:send("polarRendering",debug.polarRendering)
@@ -1007,7 +993,14 @@ function love.load()
     debug.font = love.graphics.newFont(16)
 
     -- set up the window
-    setWindow(screen.WIDTH, screen.HEIGHT, screen.DEFAULT_FULLSCREEN)
+    setWindow(screen.DEFAULT_FULLSCREEN)
+
+    -- get the current window size
+    local windowWidth, windowHeight, flags = love.window.getMode()
+    screen.WIDTH = windowWidth
+    screen.HEIGHT = windowHeight
+
+
     singlePixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
 
     -- load the first level
@@ -1046,7 +1039,7 @@ function love.keypressed(key, unicode)
     -- toggle fullscreen on alt-enter
     if key == "return" and isAltPressed() then
         local _, _, flags = love.window.getMode()
-        setWindow(screen.WIDTH, screen.HEIGHT, not flags.fullscreen)
+        setWindow(not flags.fullscreen)
         return
     end
 
@@ -1063,7 +1056,11 @@ end
 
 function love.draw()
     -- roughly scale to fit the screen
-    local windowWidth, windowHeight, _ = love.window.getMode()
+    local windowWidth, windowHeight, flags = love.window.getMode()
+    if not flags.fullscreen then
+        screen.WINDOWED_WIDTH = windowWidth
+        screen.WINDOWED_HEIGHT = windowHeight
+    end
     screen.WIDTH = windowWidth
     screen.HEIGHT = windowHeight
 
