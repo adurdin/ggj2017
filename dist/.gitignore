@@ -1,0 +1,8 @@
+# Build directories
+win32/
+win64/
+linux/
+macos/
+
+# Don't ignore love2d zips used for build
+!love2d/*
