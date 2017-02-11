@@ -1704,15 +1704,18 @@ end
 function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
+    local xAxisThreshold = 0.4
+    local yAxisThreshold = 0.8
+
     -- control inputs
     local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w")
-        or isGamepadDown("dpup") or (getGamepadAxis("lefty") < -0.4) or (getGamepadAxis("righty") < -0.4))
+        or isGamepadDown("dpup") or (getGamepadAxis("lefty") < -yAxisThreshold) or (getGamepadAxis("righty") < -yAxisThreshold))
     local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s")
-        or isGamepadDown("dpdown") or (getGamepadAxis("lefty") > 0.4) or (getGamepadAxis("righty") > 0.4))
+        or isGamepadDown("dpdown") or (getGamepadAxis("lefty") > yAxisThreshold) or (getGamepadAxis("righty") > yAxisThreshold))
     local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a")
-        or isGamepadDown("dpleft") or (getGamepadAxis("leftx") < -0.4) or (getGamepadAxis("rightx") < -0.4))
+        or isGamepadDown("dpleft") or (getGamepadAxis("leftx") < -xAxisThreshold) or (getGamepadAxis("rightx") < -xAxisThreshold))
     local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d")
-        or isGamepadDown("dpright") or (getGamepadAxis("leftx") > 0.4) or (getGamepadAxis("rightx") > 0.4))
+        or isGamepadDown("dpright") or (getGamepadAxis("leftx") > xAxisThreshold) or (getGamepadAxis("rightx") > xAxisThreshold))
     local pingSonar = (love.keyboard.isDown("space")
         or isGamepadDown("a") or isGamepadDown("b") or isGamepadDown("x") or isGamepadDown("y"))
     local pumpGas = pingSonar -- same buttons
