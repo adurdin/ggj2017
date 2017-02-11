@@ -1637,6 +1637,8 @@ player = {
 }
 
 function player:create()
+    self.mode = 'idle' -- mode can be 'idle', 'speeding', 'drilling', 'pumping', or 'autoRetracting'
+
     self.x, self.y = terrain_to_world(0, 0)
     self.trailerX, self.trailerY = 0, 0
     self.derrickX, self.derrickY = 0, 0
@@ -1650,12 +1652,11 @@ function player:create()
     self.drawScoreAccum = 0
 
     -- drilling
-    self.isDrilling = false
     self.drillDepth = 0
     self.drillDirection = 1
+    self.drillIsInDeposit = false
 
     -- pumping
-    self.isPumping = false
     self.pumpX = 0
     self.pumpY = 0
     self.pumpSize = 0
@@ -1704,122 +1705,30 @@ end
 function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
-    local xAxisThreshold = 0.4
-    local yAxisThreshold = 0.8
+    local inputs = self:readInputs()
 
-    -- control inputs
-    local retractDrill = (player.autoRetracting or love.keyboard.isDown("up") or love.keyboard.isDown("w")
-        or isGamepadDown("dpup") or (getGamepadAxis("lefty") < -yAxisThreshold) or (getGamepadAxis("righty") < -yAxisThreshold))
-    local extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s")
-        or isGamepadDown("dpdown") or (getGamepadAxis("lefty") > yAxisThreshold) or (getGamepadAxis("righty") > yAxisThreshold))
-    local moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a")
-        or isGamepadDown("dpleft") or (getGamepadAxis("leftx") < -xAxisThreshold) or (getGamepadAxis("rightx") < -xAxisThreshold))
-    local moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d")
-        or isGamepadDown("dpright") or (getGamepadAxis("leftx") > xAxisThreshold) or (getGamepadAxis("rightx") > xAxisThreshold))
-    local pingSonar = (love.keyboard.isDown("space")
-        or isGamepadDown("a") or isGamepadDown("b") or isGamepadDown("x") or isGamepadDown("y"))
-    local pumpGas = pingSonar -- same buttons
-
-    -- make 'ch'ching' noises
-    if self.isPumping and love.math.random(25) == 1 then
-        self:addScore(love.math.random() * 1000)
+    if self.mode == 'idle' then
+        self:updateIdleMode(dt, inputs)
+    elseif self.mode == 'speeding' then
+        self:updateSpeedingMode(dt, inputs)
+    elseif self.mode == 'drilling' then
+        self:updateDrillingMode(dt, inputs)
+    elseif self.mode == 'pumping' then
+        self:updatePumpingMode(dt, inputs)
+    elseif self.mode == 'autoRetracting' then
+        self:updateRetractingMode(dt, inputs)
     end
 
-    -- Emit sonar on space, if not drilling
-    if pingSonar and not player.isDrilling and sonar.currentTime <= 0.0 then
-        screenWidth = love.graphics.getWidth()
-        screenHeight = love.graphics.getHeight()
-        sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
-        sonar.currentTime = sonar.maxTime;
-        soundEmit("sonar")
-    end
+    self:updateFractorAndTrailerPositions(dt)
 
-    -- start drilling when the player presses down
-    if extendDrill and not self.isDrilling and not self.isPumping and math.abs(self.vel) < 30 then
-        self.isDrilling = true
-        self.vel = 0
-    end
+    self:updateDisplayedScore(dt)
 
-    -- check to see if we should be pumping
-    if self.isDrilling then
-        -- see if there's a deposit at the drill
-        local canStartPumping = player:canStartPumping()
-        if not previousCanStartPumping and canStartPumping then
-            print("a deposit!")
-            -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
-            soundEmit("deposit")
-        elseif previousCanStartPumping and not canStartPumping then
-            -- moved the drill out of this deposit, so reset pumping progress
-            player.pumpProgress = 0
-        end
-        previousCanStartPumping = canStartPumping
+    -- update particle systems
+    self:updatePumpParticles(dt)
+    self:updateRockParticles(dt)
+end
 
-        -- see if the player is trying to pump
-        if pumpGas and not player.isPumping then
-            if canStartPumping then
-                player:startPumping()
-            else
-                -- TODO: audio feedback that there's nothing to pump here
-                player:addRockParticles()
-            end
-        elseif not pumpGas and player.isPumping then
-            player:cancelPumping()
-        elseif pumpGas and player.isPumping then
-            -- TODO: do pumping sounds or effects or whatever
-            -- keep pumping while space is held
-            -- increment pumping progress
-            player.pumpProgress = math.min(player.pumpProgress +
-                (player.PUMP_RATE / player.pumpSize  * dt), 1.0)
-            -- show feedback
-            player:addPumpParticles()
-            -- check for completion
-            if player.pumpProgress == 1.0 then
-                player:finishPumping()
-            end
-        end
-    end
-
-    -- move drill up or down
-    if (self.isDrilling and not self.isPumping) then
-        -- can only move the drill up and down while drilling, and not pumping
-        if extendDrill and not retractDrill then
-            self:extendDrill(dt)
-        elseif not extend and retractDrill then
-            self:retractDrill(dt)
-        end
-    elseif self.isDrilling and self.isPumping then
-        -- can't move or drill while pumping
-    else
-        -- can move and ping when not drilling or pumping
-        local x = 0
-        local newDirection = self.direction
-        local directionChanged = false
-        if moveLeft then
-            x = -1
-            newDirection = -1
-        end
-        if moveRight then
-            x = 1
-            newDirection = 1
-        end
-        if newDirection ~= self.direction then
-            directionChanged = true
-            self.direction = newDirection
-        end
-
-        -- move the player
-        self.vel = self.vel + x * dt * 80
-        self.x = (self.x + self.vel * dt) % world.WIDTH
-        if moveLeft or moveRight then
-            self.vel = self.vel * (1 - 0.2 * dt)
-        else
-            self.vel = self.vel * (1 - 5 * dt)
-        end
-        if (math.abs(self.vel) < 0.1) then
-            self.vel = 0
-        end
-    end
-
+function player:updateFractorAndTrailerPositions(dt)
     -- set our height to the surface height
     local nx, ny
     self.y, nx, ny = terrain:worldSurface(self.x, 5)
@@ -1850,19 +1759,6 @@ function player:update(dt)
     -- put the drill in the trailer
     self.drillX = self.derrickX
     self.drillY = self.derrickY
-
-    -- update player draw score
-    self.drawScoreAccum = self.drawScoreAccum + dt
-    local timestep = 1 / 35
-    if self.drawScoreAccum > timestep then
-        self.drawScoreAccum = self.drawScoreAccum - timestep
-        local limit = 800000000
-        self.drawScore = self.drawScore + clamp(-limit * dt, self.score - self.drawScore, limit * dt)
-    end
-
-    -- update particle systems
-    self:updatePumpParticles(dt)
-    self:updateRockParticles(dt)
 end
 
 function player:draw()
@@ -1886,8 +1782,9 @@ function player:draw()
     -- draw the derrick (three copies because of world wrapping)
     local xs = {self.derrickX, self.derrickX - world.WIDTH, self.derrickX + world.WIDTH}
     local xShake = love.math.random(-self.vel / 500, self.vel / 500)
+    local yShake = love.math.random(-0.3, 0.3)
     local derrickY = self.derrickY
-    if self.isDrilling then derrickY = derrickY + love.math.random(-0.3, 0.3) end
+    if self.drillDepth > 0 then derrickY = derrickY + yShake end
     for i=1,3 do
         love.graphics.draw(
             self.image,
@@ -1900,7 +1797,7 @@ function player:draw()
     end
 
     -- draw the drill
-    if self.isDrilling then
+    if self.drillDepth > 0 then
         -- make it look like the drill is rotating
         if self.frameCounter % 5 == 0 then
             if self.drillDirection == 1 then
@@ -1933,43 +1830,240 @@ function player:draw()
     self:drawRockParticles()
 end
 
+function player:setMode(newMode)
+    if newMode ~= self.mode then
+        print("mode: "..dump(newMode))
+        self.mode = newMode
+    end
+end
+
+function player:readInputs()
+    local inputs = {}
+    local xAxisThreshold = 0.4
+    local yAxisThreshold = 0.8
+
+    -- control inputs
+    inputs.retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w")
+        or isGamepadDown("dpup") or (getGamepadAxis("lefty") < -yAxisThreshold) or (getGamepadAxis("righty") < -yAxisThreshold))
+    inputs.extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s")
+        or isGamepadDown("dpdown") or (getGamepadAxis("lefty") > yAxisThreshold) or (getGamepadAxis("righty") > yAxisThreshold))
+    inputs.moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a")
+        or isGamepadDown("dpleft") or (getGamepadAxis("leftx") < -xAxisThreshold) or (getGamepadAxis("rightx") < -xAxisThreshold))
+    inputs.moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d")
+        or isGamepadDown("dpright") or (getGamepadAxis("leftx") > xAxisThreshold) or (getGamepadAxis("rightx") > xAxisThreshold))
+    inputs.pingSonar = (love.keyboard.isDown("space")
+        or isGamepadDown("a") or isGamepadDown("b") or isGamepadDown("x") or isGamepadDown("y"))
+    inputs.pumpGas = inputs.pingSonar -- same buttons
+
+    -- some control inputs cancel each other
+    if inputs.moveLeft and inputs.moveRight then
+        -- can't move left and right at the same time
+        inputs.moveLeft = false
+        inputs.moveRight = false
+    end
+    if inputs.extendDrill and inputs.retractDrill then
+        -- can't drill up and down at the same time
+        inputs.extendDrill = false
+        inputs.retractDrill = false
+    end
+    if (inputs.retractDrill or inputs.extendDrill) and (inputs.moveLeft or inputs.moveRight) then
+        -- can't move and drill at the same time
+        inputs.moveLeft = false
+        inputs.moveRight = false
+        inputs.extendDrill = false
+        inputs.retractDrill = false
+    end
+    if inputs.pumpGas and (inputs.retractDrill or inputs.extendDrill) then
+        -- can't pump and drill at the same time
+        inputs.pumpGas = false
+        inputs.extendDrill = false
+        inputs.retractDrill = false
+    end
+
+    return inputs
+end
+
+function player:updateIdleMode(dt, inputs)
+    if inputs.pingSonar then
+        self:pingSonar()
+
+    elseif inputs.extendDrill then
+        -- stop moving when the player starts drilling
+        self.vel = 0
+        self:setMode('drilling')
+
+    else
+        self:move(dt, inputs.moveLeft, inputs.moveRight)
+        -- become speeding if moving fast enough
+        if self:isMovingAtSpeed() then
+            self:setMode('speeding')
+        end
+    end
+end
+
+function player:updateSpeedingMode(dt, inputs)
+    if inputs.pingSonar then
+        self:pingSonar()
+
+    else
+        self:move(dt, inputs.moveLeft, inputs.moveRight)
+        -- become idle if no longer moving fast enough
+        if not self:isMovingAtSpeed() then
+            self:setMode('idle')
+        end
+    end
+end
+
+function player:updateDrillingMode(dt, inputs)
+    -- see if there's a deposit at the drill point
+    local previousDrillIsInDeposit = self.drillIsInDeposit
+    self.drillIsInDeposit = self:isDrillingDeposit()
+
+    if inputs.pumpGas then
+        if self.drillIsInDeposit then
+            self:startPumping()
+            self:setMode('pumping')
+        else
+            -- TODO: audio feedback that there's nothing to pump here
+            self:addRockParticles()
+        end
+
+    else
+        -- just keep drilling, drilling, drilling
+
+        if self.drillIsInDeposit and not previousDrillIsInDeposit then
+            -- moved into a deposit
+            print("a deposit!")
+            -- TODO: visual or audio feedback (a "splash"?) that the drill is passing through an oil deposit?
+            soundEmit("deposit")
+        elseif not self.drillIsInDeposit and previousDrillIsInDeposit then
+            -- moved out of a deposit
+            -- reset pumping progress (will have to start from scratch with this deposit)
+            self.pumpProgress = 0
+        end
+
+        if inputs.extendDrill then
+            self:extendDrill(dt)
+        elseif inputs.retractDrill then
+            self:retractDrill(dt)
+            -- become idle if the drill is fully retracted
+            if self.drillDepth == 0 then
+                self:setMode('idle')
+            end
+        end
+    end
+end
+
+function player:updatePumpingMode(dt, inputs)
+    if inputs.pumpGas then
+        -- TODO: do pumping sounds or effects or whatever
+        -- make 'ch'ching' noises every now and again
+        if love.math.random(25) == 1 then
+            self:addScore(love.math.random() * 1000)
+        end
+
+        -- increment pumping progress
+        self.pumpProgress = math.min(self.pumpProgress +
+            (self.PUMP_RATE / self.pumpSize  * dt), 1.0)
+        -- show feedback
+        self:addPumpParticles()
+
+        -- check for completion
+        if self.pumpProgress == 1.0 then
+            self:finishPumping()
+            self:setMode('autoRetracting')
+        end
+
+    else
+        -- return to drilling mode if the player stops pumping
+        self:cancelPumping()
+        self:setMode('drilling')
+    end
+end
+
+function player:updateRetractingMode(dt, inputs)
+    self:retractDrill(dt)
+    -- become idle if the drill is fully retracted
+    if self.drillDepth == 0 then
+        self:setMode('idle')
+    end
+end
+
+function player:pingSonar()
+    if sonar.currentTime <= 0.0 then
+        sonar.sourcePosition = {(player.x / world.WIDTH), (player.y / world.HEIGHT)}
+        sonar.currentTime = sonar.maxTime;
+        soundEmit("sonar")
+    end
+end
+
+function player:move(dt, moveLeft, moveRight)
+    -- can move and ping when not drilling or pumping
+    local dx = 0
+    local newDirection = self.direction
+    local directionChanged = false
+    if moveLeft then
+        dx = -1
+        newDirection = -1
+    elseif moveRight then
+        dx = 1
+        newDirection = 1
+    end
+    if newDirection ~= self.direction then
+        directionChanged = true
+        self.direction = newDirection
+    end
+
+    -- move the player
+    self.vel = self.vel + dx * dt * 80
+    self.x = (self.x + self.vel * dt) % world.WIDTH
+    if moveLeft or moveRight then
+        -- low friction while holding an input
+        self.vel = self.vel * (1 - 0.2 * dt)
+    else
+        -- high friction otherwise
+        self.vel = self.vel * (1 - 5 * dt)
+    end
+    -- stop when speed is below a threshold
+    if (math.abs(self.vel) < 0.1) then
+        self.vel = 0
+    end
+end
+
+function player:isMovingAtSpeed()
+    return (math.abs(self.vel) >= 30)
+end
+
 function player:extendDrill(dt)
-  
     soundStop("drill_up")
     soundEmit("drill_down")
 
-    player.isDrilling = true
-
     local drillSpeed
-    if player:canStartPumping() then
-        drillSpeed = player.DRILL_EXTEND_SPEED_GAS
+    if self:isDrillingDeposit() then
+        drillSpeed = self.DRILL_EXTEND_SPEED_GAS
     else
-        drillSpeed = player.DRILL_EXTEND_SPEED_DIRT
+        drillSpeed = self.DRILL_EXTEND_SPEED_DIRT
     end
-    player.drillDepth = math.min(player.drillDepth + (drillSpeed * dt), player.DRILL_MAX_DEPTH)
+    self.drillDepth = math.min(self.drillDepth + (drillSpeed * dt), player.DRILL_MAX_DEPTH)
 end
 
 function player:retractDrill(dt)
-  
-    
     soundStop("drill_down")
     soundEmit("drill_up")
   
     local drillSpeed
-    if not autoRetracting and player:canStartPumping() then
-        drillSpeed = player.DRILL_RETRACT_SPEED_GAS
+    if self.mode == 'drilling' and self:isDrillingDeposit() then
+        drillSpeed = self.DRILL_RETRACT_SPEED_GAS
     else
-        drillSpeed = player.DRILL_RETRACT_SPEED_DIRT
+        drillSpeed = self.DRILL_RETRACT_SPEED_DIRT
     end
-    player.drillDepth = math.max(0, player.drillDepth - (drillSpeed * dt))
-    if player.drillDepth <= 5 then
-        player.drillDepth = 0
-        player.isDrilling = false
-        player.autoRetracting = false
+    self.drillDepth = math.max(0, self.drillDepth - (drillSpeed * dt))
+    if self.drillDepth <= 5 then
+        self.drillDepth = 0
     end
 end
 
-function player:canStartPumping()
+function player:isDrillingDeposit()
     self.pumpX = self.drillX
     self.pumpY = self.drillY + self.drillDepth
     local _, _, _, a = terrain:worldSample(self.pumpX, self.pumpY)
@@ -1996,12 +2090,10 @@ function player:startPumping()
         self.pumpBounds = {minX=fill.minX, minY=fill.minY, maxX=fill.maxX, maxY=fill.maxY}
         print("start pumping, size: "..dump(size).." duration: "..dump(duration))
     end
-    self.isPumping = true
 end
 
 function player:cancelPumping()
     soundStop("suck")
-    self.isPumping = false
     print("cancel pumping")
 end
 
@@ -2122,9 +2214,7 @@ function player:finishPumping()
     local tx, ty = world_to_terrain(self.pumpX, self.pumpY)
     local fill = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
     self:addScore(self.pumpScore)
-    self.isPumping = false
     self.pumpProgress = 0
-    self.autoRetracting = true
 
     terrain:startCollapse(tx, fill.minX, fill.maxX, fill.minY, fill.maxY)
 
@@ -2133,6 +2223,17 @@ function player:finishPumping()
     messages:spawn("$"..toCurrency(math.floor(self.pumpScore))..": "..msg, {0, 255, 0, 255})
 
     print("finish pumping")
+end
+
+function player:updateDisplayedScore(dt)
+    -- update player draw score
+    self.drawScoreAccum = self.drawScoreAccum + dt
+    local timestep = 1 / 35
+    if self.drawScoreAccum > timestep then
+        self.drawScoreAccum = self.drawScoreAccum - timestep
+        local limit = 800000000
+        self.drawScore = self.drawScore + clamp(-limit * dt, self.score - self.drawScore, limit * dt)
+    end
 end
 
 -- --------------------------------------------------------------------------------------
