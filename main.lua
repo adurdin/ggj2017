@@ -1908,8 +1908,9 @@ end
 function player:updateIdleMode(dt, inputs)
     if inputs.pingSonar then
         self:pingSonar()
+    end
 
-    elseif inputs.extendDrill then
+    if inputs.extendDrill then
         -- stop moving when the player starts drilling
         self.vel = 0
         self:setMode('drilling')
@@ -1926,13 +1927,12 @@ end
 function player:updateSpeedingMode(dt, inputs)
     if inputs.pingSonar then
         self:pingSonar()
+    end
 
-    else
-        self:move(dt, inputs.moveLeft, inputs.moveRight)
-        -- become idle if no longer moving fast enough
-        if not self:isMovingAtSpeed() then
-            self:setMode('idle')
-        end
+    self:move(dt, inputs.moveLeft, inputs.moveRight)
+    -- become idle if no longer moving fast enough
+    if not self:isMovingAtSpeed() then
+        self:setMode('idle')
     end
 end
 
