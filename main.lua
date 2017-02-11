@@ -247,21 +247,19 @@ function string:split(sSeparator, nMax, bRegexp)
 end
 
 function isGamepadDown(button)
-    local joystick = love.joystick.getJoysticks()[1]
-    if joystick then
-        return joystick:isGamepadDown(button)
-    else
-        return false
+    local buttonIsDown = false
+    for i, joystick in ipairs(love.joystick.getJoysticks()) do
+        buttonIsDown = buttonIsDown or joystick:isGamepadDown(button)
     end
+    return buttonIsDown
 end
 
 function getGamepadAxis(axis)
-    local joystick = love.joystick.getJoysticks()[1]
-    if joystick then
-        return joystick:getGamepadAxis(axis)
-    else
-        return 0
+    local axisValue = 0
+    for i, joystick in ipairs(love.joystick.getJoysticks()) do
+        axisValue = axisValue + joystick:getGamepadAxis(axis)
     end
+    return clamp(-1, axisValue, 1)
 end
 
 
@@ -1843,16 +1841,41 @@ function player:readInputs()
     local yAxisThreshold = 0.8
 
     -- control inputs
-    inputs.retractDrill = (love.keyboard.isDown("up") or love.keyboard.isDown("w")
-        or isGamepadDown("dpup") or (getGamepadAxis("lefty") < -yAxisThreshold) or (getGamepadAxis("righty") < -yAxisThreshold))
-    inputs.extendDrill = (love.keyboard.isDown("down") or love.keyboard.isDown("s")
-        or isGamepadDown("dpdown") or (getGamepadAxis("lefty") > yAxisThreshold) or (getGamepadAxis("righty") > yAxisThreshold))
-    inputs.moveLeft = (love.keyboard.isDown("left") or love.keyboard.isDown("a")
-        or isGamepadDown("dpleft") or (getGamepadAxis("leftx") < -xAxisThreshold) or (getGamepadAxis("rightx") < -xAxisThreshold))
-    inputs.moveRight = (love.keyboard.isDown("right") or love.keyboard.isDown("d")
-        or isGamepadDown("dpright") or (getGamepadAxis("leftx") > xAxisThreshold) or (getGamepadAxis("rightx") > xAxisThreshold))
-    inputs.pingSonar = (love.keyboard.isDown("space")
-        or isGamepadDown("a") or isGamepadDown("b") or isGamepadDown("x") or isGamepadDown("y"))
+    inputs.retractDrill = (
+        love.keyboard.isDown("up")
+        or love.keyboard.isDown("w")
+        or isGamepadDown("dpup")
+        or (getGamepadAxis("lefty") < -yAxisThreshold)
+        or (getGamepadAxis("righty") < -yAxisThreshold)
+        )
+    inputs.extendDrill = (
+        love.keyboard.isDown("down")
+        or love.keyboard.isDown("s")
+        or isGamepadDown("dpdown")
+        or (getGamepadAxis("lefty") > yAxisThreshold)
+        or (getGamepadAxis("righty") > yAxisThreshold)
+        )
+    inputs.moveLeft = (
+        love.keyboard.isDown("left")
+        or love.keyboard.isDown("a")
+        or isGamepadDown("dpleft")
+        or (getGamepadAxis("leftx") < -xAxisThreshold)
+        or (getGamepadAxis("rightx") < -xAxisThreshold)
+        )
+    inputs.moveRight = (
+        love.keyboard.isDown("right")
+        or love.keyboard.isDown("d")
+        or isGamepadDown("dpright")
+        or (getGamepadAxis("leftx") > xAxisThreshold)
+        or (getGamepadAxis("rightx") > xAxisThreshold)
+        )
+    inputs.pingSonar = (
+        love.keyboard.isDown("space")
+        or isGamepadDown("a")
+        or isGamepadDown("b")
+        or isGamepadDown("x")
+        or isGamepadDown("y")
+        )
     inputs.pumpGas = inputs.pingSonar -- same buttons
 
     -- some control inputs cancel each other
@@ -1879,7 +1902,6 @@ function player:readInputs()
         inputs.extendDrill = false
         inputs.retractDrill = false
     end
-
     return inputs
 end
 
