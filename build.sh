@@ -5,12 +5,12 @@ set -e
 
 SRCPATH="$(cd "$(dirname "$0")" && pwd -P)"
 BUILDPATH="${SRCPATH}/dist"
-mkdir -p "${BUILDPATH}"
+LOVEFILE="${BUILDPATH}/fracktheplanet.love"
+ZIPFILE="${BUILDPATH}/Frack The Planet.zip"
 
 # create .love file #######################################
 
 FILELIST=(README.md main.lua assets)
-LOVEFILE="${BUILDPATH}/fracktheplanet.love"
 rm -f "${LOVEFILE}"
 cd "${SRCPATH}"
 zip -q -r "${LOVEFILE}" "${FILELIST[@]}"
@@ -68,14 +68,9 @@ cd - >/dev/null
 
 cd "${BUILDPATH}"
 FILELIST=(win32 win64 macos linux)
-ZIPFILE="${BUILDPATH}/Frack The Planet.zip"
 rm -f "${ZIPFILE}"
 zip -q -r -y "${ZIPFILE}" "${FILELIST[@]}"
 cd - >/dev/null
-
-# clean up ################################################
-
-rm -rf "${LOVEFILE}" "${BUILDPATH}/win32" "${BUILDPATH}/win64" "${BUILDPATH}/macos" "${BUILDPATH}/linux"
 
 # done ####################################################
 
