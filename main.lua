@@ -334,10 +334,7 @@ menuLevel = {}
 
 function menuLevel:load()
     -- load credits sprites
-    self.titleSize = 48
-    self.nameSize = 28
-    self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
-    self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+    self:updateTitleSizesAndFonts()
     self.titleColor = {255, 64, 32, 255}
     self.nameColor = {255, 255, 255, 255}
     self.shadowColor = {64, 64, 64, 255}
@@ -365,7 +362,7 @@ function menuLevel:draw()
     love.graphics.setBackgroundColor(0, 0, 0, 255)
     love.graphics.clear()
     
-    -- nonsense from aaron
+    -- nonsense from aaron, that draws the background
     love.graphics.setColor(0,140,255)
     love.graphics.rectangle("fill", 0, 0, screen.WIDTH, screen.HEIGHT-100)
     love.graphics.setColor(5,162,9)
@@ -376,7 +373,8 @@ function menuLevel:draw()
     menuImage = love.graphics.newImage("assets/menu.png")
     love.graphics.draw(menuImage, screen.WIDTH-500,screen.HEIGHT-500)
 
-    local y = 50
+    -- draw titles, scaled
+    local y = 50 * self.titleScale
     y = self:printTitle("F R A C K  t h e  P L A N E T", y)
     y = self:blankLine(y)
     y = self:printName("SPACE to start", y)
@@ -405,6 +403,18 @@ function menuLevel:keypressed(key)
 end
 
 function menuLevel:update()
+    self:updateTitleSizesAndFonts()
+end
+
+function menuLevel:updateTitleSizesAndFonts()
+    local previousScale = self.titleScale
+    self.titleScale = screen.WIDTH / 1024.0
+    if self.titleScale ~= previousScale then
+        self.titleSize = 48 * self.titleScale
+        self.nameSize = 28 * self.titleScale
+        self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
+        self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+    end
 end
 
 -- --------------------------------------------------------------------------------------
