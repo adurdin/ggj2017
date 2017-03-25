@@ -2027,6 +2027,7 @@ function player:readInputs(dt)
         or love.keyboard.isDown("w")
         or (isFightStick and (
             isGamepadDown("b")
+            or isGamepadDown("dpup")
             ))
         or (not isFightStick and (
             isGamepadDown("dpup")
@@ -2039,6 +2040,8 @@ function player:readInputs(dt)
         or love.keyboard.isDown("s")
         or (isFightStick and (
             isGamepadDown("a")
+            or (self.mode == 'drilling' and isGamepadDown("dpdown"))
+            or (self.mode ~= 'drilling' and isGamepadDown("dpdown") and not isGamepadDown("dpleft") and not isGamepadDown("dpright"))
             ))
         or (not isFightStick and (
             isGamepadDown("dpdown")
@@ -2104,13 +2107,6 @@ function player:readInputs(dt)
     end
     if inputs.extendDrill and inputs.retractDrill then
         -- can't drill up and down at the same time
-        inputs.extendDrill = false
-        inputs.retractDrill = false
-    end
-    if (inputs.retractDrill or inputs.extendDrill) and (inputs.moveLeft or inputs.moveRight) then
-        -- can't move and drill at the same time
-        inputs.moveLeft = false
-        inputs.moveRight = false
         inputs.extendDrill = false
         inputs.retractDrill = false
     end
