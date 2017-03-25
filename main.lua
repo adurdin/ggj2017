@@ -1856,8 +1856,8 @@ function player:create()
     -- fight stick button mashing
     self.mashStrength = 0.0
     self.mashStrengthMax = 10.0
-    self.mashImpulseStrength = 1.0
-    self.mashDeclineRate = 5.0
+    self.mashImpulseStrength = 4.0
+    self.mashDeclineRate = 25.0
     self.mashDownLastUpdate = false
 end
 
@@ -2411,7 +2411,7 @@ function player:addPumpParticles(pumpRateScale)
     end
     if x ~= nil and y ~= nil then
         -- scale the speed by pump rate
-        local speedScale = 0.1 + (0.9 * pumpRateScale)
+        local speedScale = 0.1 + (0.9 * pumpRateScale * pumpRateScale)
         -- position the particle system
         psys:setPosition(x, y)
         -- set the speed
