@@ -8,6 +8,7 @@ debug = {
     polarRendering = true,
     renderTerrainBuffer = false,
     cameraControl = false,
+    forceFightStickMode = false,
 }
 
 terrain = {
@@ -271,13 +272,17 @@ function getGamepadAxis(axis)
 end
 
 function isGamepadFightStick()
-    for i, joystick in ipairs(love.joystick.getJoysticks()) do
-        -- Check if any connected controller is the "FightingStickEX2"
-        if joystick:getGUID() == "0d0f0000000000000d00000000000000" then
-            return true
+    if debug.forceFightStickMode then
+        return true
+    else
+        for i, joystick in ipairs(love.joystick.getJoysticks()) do
+            -- Check if any connected controller is the "FightingStickEX2"
+            if joystick:getGUID() == "0d0f0000000000000d00000000000000" then
+                return true
+            end
         end
+        return false
     end
-    return false
 end
 
 
@@ -881,6 +886,9 @@ function gameLevel:keypressed(key, unicode)
         elseif key == "6" then
             messages:spawn("text", {255, 128, 0, 255})
             print("message test.")
+        elseif key == "7" then
+            debug.forceFightStickMode = not debug.forceFightStickMode
+            print("forceFightStickMode: " .. debug.forceFightStickMode)
         end
     else
         -- toggle cheats when you type the magic word
