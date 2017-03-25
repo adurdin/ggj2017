@@ -1,14 +1,15 @@
 debug = {
-    CHEATS = false,
+-- FIXME: don't commit
+    CHEATS = true,
     -- not cheats
     showFPSCounter = false, -- ctrl-f to toggle
     -- cheats
-    timerPaused = false,
-    revealGround = false,
+    timerPaused = true,
+    revealGround = true,
     polarRendering = true,
     renderTerrainBuffer = false,
     cameraControl = false,
-    forceFightStickMode = false,
+    forceFightStickMode = true,
 }
 
 terrain = {
