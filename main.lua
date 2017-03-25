@@ -262,6 +262,16 @@ function getGamepadAxis(axis)
     return clamp(-1, axisValue, 1)
 end
 
+function isGamepadFightStick()
+    for i, joystick in ipairs(love.joystick.getJoysticks()) do
+        -- Check if any connected controller is the "FightingStickEX2"
+        if joystick:getGUID() == "0d0f0000000000000d00000000000000" then
+            return true
+        end
+    end
+    return false
+end
+
 
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
@@ -1017,6 +1027,8 @@ function love.load()
     screen.WIDTH = windowWidth
     screen.HEIGHT = windowHeight
 
+    -- configure the custom controller
+    configureFightStickMapping()
 
     singlePixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
 
@@ -1098,6 +1110,26 @@ function love.draw()
         love.graphics.print("FPS: "..tostring(love.timer.getFPS()), 0, 0)
         love.graphics.pop()
     end
+end
+
+function configureFightStickMapping()
+    -- Mapping for "FightingStickEX2"
+    local guid = "0d0f0000000000000d00000000000000"
+    love.joystick.setGamepadMapping(guid, "a", "button", 1, nil)
+    love.joystick.setGamepadMapping(guid, "b", "button", 2, nil)
+    love.joystick.setGamepadMapping(guid, "x", "button", 3, nil)
+    love.joystick.setGamepadMapping(guid, "y", "button", 4, nil)
+    love.joystick.setGamepadMapping(guid, "leftshoulder", "button", 5, nil)
+    love.joystick.setGamepadMapping(guid, "rightshoulder", "button", 6, nil)
+    love.joystick.setGamepadMapping(guid, "start", "button", 9, nil)
+    love.joystick.setGamepadMapping(guid, "back", "button", 10, nil)
+    love.joystick.setGamepadMapping(guid, "guide", "button", 11, nil)
+    love.joystick.setGamepadMapping(guid, "dpup", "button", 12, nil)
+    love.joystick.setGamepadMapping(guid, "dpdown", "button", 13, nil)
+    love.joystick.setGamepadMapping(guid, "dpleft", "button", 14, nil)
+    love.joystick.setGamepadMapping(guid, "dpright", "button", 15, nil)
+    love.joystick.setGamepadMapping(guid, "triggerleft", "axis", 3, nil)
+    love.joystick.setGamepadMapping(guid, "triggerright", "axis", 6, nil)
 end
 
 -- --------------------------------------------------------------------------------------
