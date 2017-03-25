@@ -2156,6 +2156,12 @@ function player:updateSpeedingMode(dt, inputs)
 end
 
 function player:updateDrillingMode(dt, inputs)
+    -- allow pinging while drilling with the fight stick
+    local isFightStick = isGamepadFightStick()
+    if isFightStick and inputs.pingSonar then
+        self:pingSonar()
+    end
+
     -- see if there's a deposit at the drill point
     local previousDrillIsInDeposit = self.drillIsInDeposit
     self.drillIsInDeposit = self:isDrillingDeposit()
