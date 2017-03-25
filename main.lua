@@ -2354,7 +2354,8 @@ end
 function player:addPumpParticles(pumpRateScale)
     -- find a free particle system (if any)
     local psys
-    local maxParticleSystems = math.ceil(pumpRateScale * self.pumpParticleSystemCount)
+    local maxParticleSystems = math.ceil((pumpRateScale * pumpRateScale) * self.pumpParticleSystemCount)
+    maxParticleSystems = math.max(3, maxParticleSystems)
     for i=1,math.min(maxParticleSystems, #self.pumpParticleSystems) do
         local p = self.pumpParticleSystems[i]
         if p:getCount() == 0 then
@@ -2385,9 +2386,11 @@ function player:addPumpParticles(pumpRateScale)
     local pumpTX, pumpTY = world_to_terrain(self.pumpX, self.pumpY)
     local x, y
     for i=1,5 do
+        -- start the progress with a small radius so there's better feedback
+        local scale = 0.1 + (0.9 * self.pumpProgress)
         -- find a random point
         local tx, ty = randomScaledPointInRectWithOffset(centerTX, centerTY,
-            rectTWidth, rectTHeight, self.pumpProgress, pumpTX, pumpTY)
+            rectTWidth, rectTHeight, scale, pumpTX, pumpTY)
         tx, ty = math.floor(tx), math.floor(ty)
         ty = math.min(ty, terrain.HEIGHT - 1)
 
@@ -2399,13 +2402,15 @@ function player:addPumpParticles(pumpRateScale)
         end
     end
     if x ~= nil and y ~= nil then
+        -- scale the speed by pump rate
+        local speedScale = 0.1 + (0.9 * pumpRateScale)
         -- position the particle system
         psys:setPosition(x, y)
         -- set the speed
         local dx, dy = (self.pumpX - x), (self.pumpY - y)
         local length = math.sqrt(dx*dx + dy*dy)
         local ndx, ndy = dx / length, dy / length
-        local speedMin, speedMax = 5, 10
+        local speedMin, speedMax = 5 * speedScale, 10 * speedScale
         psys:setLinearAcceleration(dx * speedMin, dy * speedMin, dx * speedMax, dy * speedMax)
         -- emit some particles
         psys:emit(psys:getBufferSize())
