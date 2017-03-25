@@ -1603,7 +1603,7 @@ function terrain:removeUnusableDeposits()
     for i, d in pairs(deposits) do
         local atLeftEdge = (d.minX == 0)
         local atRightEdge = (d.maxX == terrain.WIDTH - 1)
-        local atTopAndShallow = (d.minY <= terrain.GRASS_DEPTH and d.maxY < terrain.MIN_EDGE_HEIGHT)
+        local atTopAndShallow = (d.minY <= terrain.GRASS_DEPTH * 2 and d.maxY < terrain.MIN_EDGE_HEIGHT)
         local atBottomAndShallow = (d.maxY >= (terrain.HEIGHT - 1) and (d.maxY - d.minY) < terrain.MIN_EDGE_HEIGHT)
         local notWideEnough = (d.maxX - d.minX < terrain.MIN_DEPOSIT_WIDTH)
         local notDeepEnough = (d.maxY - d.minY < terrain.MIN_DEPOSIT_HEIGHT)
@@ -1769,6 +1769,7 @@ end
 
 player = {
     DRILL_MAX_DEPTH = terrain_to_world_height(terrain.HEIGHT) - 1, -- frackulons
+    DRILL_MIN_DEPTH = 10, -- frackulons
     DRILL_EXTEND_SPEED_DIRT = 64, -- frackulons/second
     DRILL_EXTEND_SPEED_GAS = 32, -- frackulons/second
     DRILL_RETRACT_SPEED_DIRT = 128, -- frackulons/second
@@ -2292,7 +2293,7 @@ function player:extendDrill(dt)
     else
         drillSpeed = self.DRILL_EXTEND_SPEED_DIRT
     end
-    self.drillDepth = math.min(self.drillDepth + (drillSpeed * dt), player.DRILL_MAX_DEPTH)
+    self.drillDepth = math.min(math.max(player.DRILL_MIN_DEPTH, self.drillDepth + (drillSpeed * dt)), player.DRILL_MAX_DEPTH)
 end
 
 function player:retractDrill(dt)
@@ -2306,7 +2307,7 @@ function player:retractDrill(dt)
         drillSpeed = self.DRILL_RETRACT_SPEED_DIRT
     end
     self.drillDepth = math.max(0, self.drillDepth - (drillSpeed * dt))
-    if self.drillDepth <= 5 then
+    if self.drillDepth <= player.DRILL_MIN_DEPTH then
         self.drillDepth = 0
     end
 end
