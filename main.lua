@@ -2021,9 +2021,13 @@ function player:readInputs(dt)
     -- With the fightstick, we have to mash lt and/or rt to pump
     local isMashingSufficiently = false
     if isFightStick then
-        local lt = (getGamepadAxis("triggerleft") > 0.5)
-        local rt = (getGamepadAxis("triggerright") > 0.5)
-        inputs.pumpRateScale = self:updateMash(lt or rt, dt)
+        local isMashButtonDown = (
+            (getGamepadAxis("triggerleft") > 0.5)
+            or (getGamepadAxis("triggerright") > 0.5)
+            or love.keyboard.isDown("[")
+            or love.keyboard.isDown("]")
+            )
+        inputs.pumpRateScale = self:updateMash(isMashButtonDown, dt)
     else
         inputs.pumpRateScale = 0.5
     end
