@@ -1958,12 +1958,12 @@ function player:draw()
         end
         love.graphics.draw(self.drillImage, self.drillShaftQuad, self.drillX, self.drillY,
             0, -- rotation
-            self.drillDirection, self.drillDepth / self.drillShaftQuadHeight, -- scale
+            self.drillDirection, (self.drillDepth - self.drillBitQuadHeight) / self.drillShaftQuadHeight, -- scale
             (self.drillShaftQuadWidth / 2), 0)
         love.graphics.draw(self.drillImage, self.drillBitQuad, self.drillX, self.drillY + self.drillDepth,
             0, -- rotation
             self.drillDirection, 1, -- scale
-            (self.drillBitQuadWidth / 2), (self.drillBitQuadHeight / 2))
+            (self.drillBitQuadWidth / 2), self.drillBitQuadHeight)
     end
 
     -- draw the trailer (three copies because of world wrapping)
@@ -2381,7 +2381,7 @@ function player:addPumpParticles(pumpRateScale)
     local centerTY = (self.pumpBounds.maxY + self.pumpBounds.minY) / 2
     local rectTWidth = math.abs(self.pumpBounds.maxX - self.pumpBounds.minX)
     local rectTHeight = math.abs(self.pumpBounds.maxY - self.pumpBounds.minY)
-    local pumpTX, pumpTY = world_to_terrain(self.pumpX, self.pumpY + 5)
+    local pumpTX, pumpTY = world_to_terrain(self.pumpX, self.pumpY)
     local x, y
     for i=1,5 do
         -- find a random point
