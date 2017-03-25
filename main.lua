@@ -1698,7 +1698,8 @@ player = {
     DRILL_EXTEND_SPEED_GAS = 32, -- frackulons/second
     DRILL_RETRACT_SPEED_DIRT = 128, -- frackulons/second
     DRILL_RETRACT_SPEED_GAS = 64, -- frackulons/second
-    PUMP_RATE = 1000/2, -- terrain units / second; an 1000 unit deposit will take four seconds
+    PUMP_RATE = 1000/1, -- terrain units / second; an 1000 unit deposit will take one second
+                        -- but note that inputs.pumpRateScale (default 0.5) will modify this.
     GAS_PRICE = 987654/1, -- dollars / terrain units
     LAWYER_PRICE = 17 * 1754362 -- dollars / protester
 }
@@ -1731,7 +1732,7 @@ function player:create()
     self.pumpProgress = 0
     self.pumpBounds = {minX=0, minY=0, maxX=0, maxY=0}
     self.pumpParticleSystems = {}
-    self.pumpParticleSystemCount = 50
+    self.pumpParticleSystemCount = 100
     self.rockParticleSystem = self:createRockParticleSystem()
 
     -- player image
@@ -1767,12 +1768,19 @@ function player:create()
 
     self.trailerHitchOffset = (1 + math.floor(self.playerQuadWidth / 2))
     self.cameraOffset = (self.playerQuadWidth - self.trailerQuadWidth) / 2
+
+    -- fight stick button mashing
+    self.mashStrength = 0.0
+    self.mashStrengthMax = 10.0
+    self.mashImpulseStrength = 1.0
+    self.mashDeclineRate = 5.0
+    self.mashDownLastUpdate = false
 end
 
 function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
-    local inputs = self:readInputs()
+    local inputs = self:readInputs(dt)
 
     if self.mode == 'idle' then
         self:updateIdleMode(dt, inputs)
@@ -1904,10 +1912,40 @@ function player:setMode(newMode)
     end
 end
 
-function player:readInputs()
+function player:updateMash(button, dt)
+    -- Strength declines with age
+    self.mashStrength = math.max(0, self.mashStrength - self.mashDeclineRate * dt)
+
+    if button ~= self.mashDownLastUpdate then
+        self.mashDownLastUpdate = button
+        if button then
+            -- Add an impulse
+            self.mashStrength = math.min(self.mashStrengthMax, self.mashStrength + self.mashImpulseStrength)
+        end
+    end
+
+    print("mash: " .. dump(self.mashStrength))
+
+    -- Return a normalised value of how well the player is mashing
+    return (self.mashStrength / self.mashStrengthMax)
+end
+
+function player:readInputs(dt)
     local inputs = {}
     local xAxisThreshold = 0.4
     local yAxisThreshold = 0.8
+    local isFightStick = isGamepadFightStick()
+
+    -- With the fightstick, we have to mash lt and/or rt to pump
+    local isMashingSufficiently = false
+    if isFightStick then
+        local lt = (getGamepadAxis("triggerleft") > 0.5)
+        local rt = (getGamepadAxis("triggerright") > 0.5)
+        inputs.pumpRateScale = self:updateMash(lt or rt, dt)
+    else
+        inputs.pumpRateScale = 0.5
+    end
+
 
     -- control inputs
     inputs.retractDrill = (
@@ -1974,8 +2012,7 @@ function player:readInputs()
     inputs.pumpGas = (
         love.keyboard.isDown("space")
         or (isFightStick and (
-            (getGamepadAxis("triggerleft") > 0.5)
-            or (getGamepadAxis("triggerright") > 0.5)
+            (inputs.pumpRateScale > 0)
             ))
         or (not isFightStick and (
             isGamepadDown("a")
@@ -2092,10 +2129,11 @@ function player:updatePumpingMode(dt, inputs)
         end
 
         -- increment pumping progress
+        local pumpRateScale = inputs.pumpRateScale
         self.pumpProgress = math.min(self.pumpProgress +
-            (self.PUMP_RATE / self.pumpSize  * dt), 1.0)
+            (self.PUMP_RATE * pumpRateScale / self.pumpSize  * dt), 1.0)
         -- show feedback
-        self:addPumpParticles()
+        self:addPumpParticles(pumpRateScale)
 
         -- check for completion
         if self.pumpProgress == 1.0 then
@@ -2231,10 +2269,10 @@ function player:addScore(value)
     soundEmit("coin")
 end
 
-function player:addPumpParticles()
+function player:addPumpParticles(pumpRateScale)
     -- find a free particle system (if any)
     local psys
-    local maxParticleSystems = math.ceil(self.pumpProgress * self.pumpParticleSystemCount)
+    local maxParticleSystems = math.ceil(pumpRateScale * self.pumpParticleSystemCount)
     for i=1,math.min(maxParticleSystems, #self.pumpParticleSystems) do
         local p = self.pumpParticleSystems[i]
         if p:getCount() == 0 then
