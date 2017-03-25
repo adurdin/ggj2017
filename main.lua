@@ -1045,6 +1045,8 @@ function gameOverLevel:load()
     self.nameColor = {255, 255, 255, 255}
     self.shadowColor = {64, 64, 64, 255}
     self.scrollY = screen.HEIGHT
+
+    self.started = love.timer.getTime()
 end
 
 function gameOverLevel:printTitle(text, y)
@@ -1088,7 +1090,11 @@ function gameOverLevel:draw()
 end
 
 function gameOverLevel:gamepadpressed(joystick, button)
-    if button == "start" or button == "back" then
+    if ((button == "start" or button == "back") or (
+        (love.timer.getTime() - self.started > 2.0)
+            and (button == "a" or button == "b" or button == "x" or button == "y")
+        ))
+    then
         level.next = menuLevel
     end
 end
