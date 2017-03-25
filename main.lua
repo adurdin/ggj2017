@@ -386,6 +386,12 @@ function menuLevel:draw()
     y = self:printName("ESC to quit", y)
 end
 
+function menuLevel:gamepadpressed(joystick, button)
+    if button == "start" or button == "a" or button == "b" or button == "x" or button == "y" then
+        level.next = gameLevel
+    end
+end
+
 function menuLevel:keypressed(key)
     if key == "space" or key == "enter" then
         level.next = gameLevel
@@ -469,6 +475,12 @@ function helpLevel:draw()
     y = self:printName("Space (hold) --- Pump gas from deposit", y)
     y = self:blankLine(y)
     y = self:printName("Space to return to menu", y)
+end
+
+function helpLevel:gamepadpressed(joystick, button)
+    if button == "start" or button == "back" or button == "a" or button == "b" or button == "x" or button == "y" then
+        level.next = menuLevel
+    end
 end
 
 function helpLevel:keypressed(key)
@@ -558,6 +570,12 @@ function creditsLevel:draw()
     y = self:printName("Gordon Brown, David Farrell, Aidan Dodds", y)
 
     if y < 0 then
+        level.next = menuLevel
+    end
+end
+
+function creditsLevel:gamepadpressed(joystick, button)
+    if button == "start" or button == "back" or button == "a" or button == "b" or button == "x" or button == "y" then
         level.next = menuLevel
     end
 end
@@ -745,6 +763,13 @@ function gameLevel:update(dt)
             camera.positionX = centerX - (screen.WIDTH / 2.0) / camera.scale
             camera.positionY = (world.TERRAIN_Y + world.TERRAIN_SIZE + groundBelowTerrain) - screen.HEIGHT / camera.scale
         end
+    end
+end
+
+function gameLevel:gamepadpressed(joystick, button)
+    if button == "back" then
+        -- quit to menu
+        level.next = menuLevel
     end
 end
 
@@ -993,6 +1018,12 @@ function gameOverLevel:draw()
     y = self:printName("ESC to restart", y)
 end
 
+function gameOverLevel:gamepadpressed(joystick, button)
+    if button == "start" or button == "back" then
+        level.next = menuLevel
+    end
+end
+
 function gameOverLevel:keypressed(key)
     if key == "escape" or key == "return" then
         level.next = menuLevel
@@ -1062,6 +1093,12 @@ function love.update(dt)
         local l = level.current
         if l.update then l:update(dt) end
     end
+end
+
+function love.gamepadpressed(joystick, button)
+    -- pass buttons to the current level
+    local l = level.current
+    if l.gamepadpressed then l:gamepadpressed(joystick, button) end
 end
 
 function love.keypressed(key, unicode)
