@@ -1924,8 +1924,6 @@ function player:updateMash(button, dt)
         end
     end
 
-    print("mash: " .. dump(self.mashStrength))
-
     -- Return a normalised value of how well the player is mashing
     return (self.mashStrength / self.mashStrengthMax)
 end
@@ -2043,6 +2041,8 @@ function player:readInputs(dt)
     if inputs.pumpGas and (inputs.retractDrill or inputs.extendDrill) then
         -- can't pump and drill at the same time
         inputs.pumpGas = false
+        inputs.pumpRateScale = 0.0
+        self.mashStrength = 0.0
         inputs.extendDrill = false
         inputs.retractDrill = false
     end
@@ -2382,6 +2382,7 @@ function player:finishPumping()
     local fill = terrain:floodfill(tx, ty, TERRAIN_VOID_ALPHA)
     self:addScore(self.pumpScore)
     self.pumpProgress = 0
+    self.mashStrength = 0.0
 
     terrain:startCollapse(tx, fill.minX, fill.maxX, fill.minY, fill.maxY)
 
