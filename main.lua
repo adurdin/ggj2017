@@ -212,6 +212,14 @@ function setWindow(fullscreen)
     })
 end
 
+function printAlignedShadowedText(text, x, y, alignment, limit, color, shadowColor)
+    local offset = 2
+    love.graphics.setColor(shadowColor[1], shadowColor[2], shadowColor[3], shadowColor[4])
+    love.graphics.printf(text, x + offset, y + offset, limit, alignment)
+    love.graphics.setColor(color[1], color[2], color[3], color[4])
+    love.graphics.printf(text, x, y, limit, alignment)
+end
+
 function printCenteredShadowedText(text, x, y, color, shadowColor)
     local offset = 2
     local halfWidth = screen.WIDTH / 2
@@ -339,6 +347,28 @@ function menuLevel:load()
     self.nameColor = {255, 255, 255, 255}
     self.shadowColor = {64, 64, 64, 255}
     self.scrollY = screen.HEIGHT
+    self.controlImages = {
+        button = {
+            green = love.graphics.newImage("assets/button-green.png"),
+            red = love.graphics.newImage("assets/button-red.png"),
+            blue = love.graphics.newImage("assets/button-blue.png"),
+            yellow = love.graphics.newImage("assets/button-yellow.png"),
+            grey = love.graphics.newImage("assets/button-grey.png"),
+        },
+        stick = {
+            left = love.graphics.newImage("assets/stick-left.png"),
+            middle = love.graphics.newImage("assets/stick-middle.png"),
+            right = love.graphics.newImage("assets/stick-right.png"),
+        },
+    }
+    for name,image in pairs(self.controlImages.button) do
+        image:setFilter("nearest", "nearest")
+        image:setWrap("clamp", "clamp")
+    end
+    for name,image in pairs(self.controlImages.stick) do
+        image:setFilter("nearest", "nearest")
+        image:setWrap("clamp", "clamp")
+    end
 end
 
 function menuLevel:printTitle(text, y)
@@ -350,6 +380,12 @@ end
 function menuLevel:printName(text, y)
     love.graphics.setFont(self.nameFont)
     printCenteredShadowedText(text, screen.WIDTH / 2, y, self.nameColor, self.shadowColor)
+    return y + self.nameSize
+end
+
+function menuLevel:printControl(text, x, y, alignment, limit)
+    love.graphics.setFont(self.controlFont)
+    printAlignedShadowedText(text, x, y, alignment, limit, self.nameColor, self.shadowColor)
     return y + self.nameSize
 end
 
@@ -375,13 +411,34 @@ function menuLevel:draw()
 
     -- draw titles, scaled
     local y = 50 * self.titleScale
-    y = self:printTitle("F R A C K  t h e  P L A N E T", y)
-    y = self:blankLine(y)
-    y = self:printName("SPACE to start", y)
-    y = self:blankLine(y)
-    y = self:printName("H for help and controls", y)
-    y = self:printName("C for credits", y)
-    y = self:printName("ESC to quit", y)
+    y = self:printTitle("FRACK the PLANET", y)
+
+    -- Draw the controls
+    local x = 200
+    local y = 150
+    local frame = math.floor((love.timer.getTime() * 1.8) % 4)
+    local stickImage;
+    if frame < 1 then
+        stickImage = self.controlImages.stick.left
+    elseif frame < 2 then
+        stickImage = self.controlImages.stick.middle
+    elseif frame < 3 then
+        stickImage = self.controlImages.stick.right
+    else
+        stickImage = self.controlImages.stick.middle
+    end
+    self:printControl("drive", (x+10) * self.titleScale, (y+125) * self.titleScale, "left", 144 * self.titleScale)
+    love.graphics.draw(stickImage, (x+7) * self.titleScale, (y+190) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    self:printControl("drill\nup:\ndown:", (x+196) * self.titleScale, (y+104) * self.titleScale, "right", 144 * self.titleScale)
+    love.graphics.draw(self.controlImages.button.red, (x+355) * self.titleScale, (y+144) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    love.graphics.draw(self.controlImages.button.green, (x+353) * self.titleScale, (y+216) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    self:printControl("scan", (x+468) * self.titleScale, (y+44) * self.titleScale, "left", 136 * self.titleScale)
+    love.graphics.draw(self.controlImages.button.blue, (x+459) * self.titleScale, (y+104) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    love.graphics.draw(self.controlImages.button.yellow, (x+531) * self.titleScale, (y+110) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    self:printControl("pump", (x+460) * self.titleScale, (y+280) * self.titleScale, "left", 143 * self.titleScale)
+    love.graphics.draw(self.controlImages.button.grey, (x+457) * self.titleScale, (y+196) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    love.graphics.draw(self.controlImages.button.grey, (x+529) * self.titleScale, (y+202) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+
 end
 
 function menuLevel:gamepadpressed(joystick, button)
@@ -410,10 +467,12 @@ function menuLevel:updateTitleSizesAndFonts()
     local previousScale = self.titleScale
     self.titleScale = screen.WIDTH / 1024.0
     if self.titleScale ~= previousScale then
-        self.titleSize = 48 * self.titleScale
+        self.titleSize = 100 * self.titleScale
         self.nameSize = 28 * self.titleScale
+        self.controlSize = 56 * self.titleScale
         self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
         self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
+        self.controlFont = love.graphics.newFont("assets/nullp.ttf", self.controlSize)
     end
 end
 
