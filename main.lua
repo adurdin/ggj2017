@@ -1876,39 +1876,77 @@ function player:readInputs()
     inputs.retractDrill = (
         love.keyboard.isDown("up")
         or love.keyboard.isDown("w")
-        or isGamepadDown("dpup")
-        or (getGamepadAxis("lefty") < -yAxisThreshold)
-        or (getGamepadAxis("righty") < -yAxisThreshold)
+        or (isFightStick and (
+            isGamepadDown("b")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dpup")
+            or (getGamepadAxis("lefty") < -yAxisThreshold)
+            or (getGamepadAxis("righty") < -yAxisThreshold)
+            ))
         )
     inputs.extendDrill = (
         love.keyboard.isDown("down")
         or love.keyboard.isDown("s")
-        or isGamepadDown("dpdown")
-        or (getGamepadAxis("lefty") > yAxisThreshold)
-        or (getGamepadAxis("righty") > yAxisThreshold)
+        or (isFightStick and (
+            isGamepadDown("a")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dpdown")
+            or (getGamepadAxis("lefty") > yAxisThreshold)
+            or (getGamepadAxis("righty") > yAxisThreshold)
+            ))
         )
     inputs.moveLeft = (
         love.keyboard.isDown("left")
         or love.keyboard.isDown("a")
-        or isGamepadDown("dpleft")
-        or (getGamepadAxis("leftx") < -xAxisThreshold)
-        or (getGamepadAxis("rightx") < -xAxisThreshold)
+        or (isFightStick and (
+            isGamepadDown("dpleft")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dpleft")
+            or (getGamepadAxis("leftx") < -xAxisThreshold)
+            or (getGamepadAxis("rightx") < -xAxisThreshold)
+            ))
         )
     inputs.moveRight = (
         love.keyboard.isDown("right")
         or love.keyboard.isDown("d")
-        or isGamepadDown("dpright")
-        or (getGamepadAxis("leftx") > xAxisThreshold)
-        or (getGamepadAxis("rightx") > xAxisThreshold)
+        or (isFightStick and (
+            isGamepadDown("dpright")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dpright")
+            or (getGamepadAxis("leftx") > xAxisThreshold)
+            or (getGamepadAxis("rightx") > xAxisThreshold)
+            ))
         )
     inputs.pingSonar = (
         love.keyboard.isDown("space")
-        or isGamepadDown("a")
-        or isGamepadDown("b")
-        or isGamepadDown("x")
-        or isGamepadDown("y")
+        or (isFightStick and (
+            isGamepadDown("x")
+            or isGamepadDown("y")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("a")
+            or isGamepadDown("b")
+            or isGamepadDown("x")
+            or isGamepadDown("y")
+            ))
         )
-    inputs.pumpGas = inputs.pingSonar -- same buttons
+    inputs.pumpGas = (
+        love.keyboard.isDown("space")
+        or (isFightStick and (
+            (getGamepadAxis("triggerleft") > 0.5)
+            or (getGamepadAxis("triggerright") > 0.5)
+            ))
+        or (not isFightStick and (
+            isGamepadDown("a")
+            or isGamepadDown("b")
+            or isGamepadDown("x")
+            or isGamepadDown("y")
+            ))
+        )
 
     -- some control inputs cancel each other
     if inputs.moveLeft and inputs.moveRight then
