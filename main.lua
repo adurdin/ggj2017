@@ -1395,6 +1395,11 @@ function love.load()
 
     -- load the first level
     local l = menuLevel
+
+    -- TEMP
+    gameOverLevel.score = 1234567890
+    l = gameOverLevel
+
     level.current = l
     level.next = nil
     -- load the new level
