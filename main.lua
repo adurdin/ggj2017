@@ -1069,6 +1069,7 @@ function gameOverLevel:load()
     self.keyRepeatDelay = 0
 
     self.started = love.timer.getTime()
+    self.ready = false
 end
 
 function gameOverLevel:printTitle(text, y)
@@ -1147,13 +1148,16 @@ function gameOverLevel:draw()
 
     local y = 50
     y = self:printTitle("- GAME OVER -", y)
-    y = self:blankLine(y)
-    y = self:printName("Your score: $"..toCurrency(math.floor(self.score)), y)
-    y = self:blankLine(y)
-    y = self:printName("ESC to restart", y)
 
-    if self.enteringName then
-        self:printNameEntry(self.nameEntry, self.nameEntryIndex, 0, y)
+    if self.ready then
+        y = self:blankLine(y)
+        y = self:printName("Your score: $"..toCurrency(math.floor(self.score)), y)
+        y = self:blankLine(y)
+        y = self:printName("ESC to restart", y)
+
+        if self.enteringName then
+            self:printNameEntry(self.nameEntry, self.nameEntryIndex, 0, y)
+        end
     end
 end
 
@@ -1302,7 +1306,6 @@ function gameOverLevel:inputpressed(key)
             self:commitNameEntry()
         end
     else
--- FIXME - move the delay to the start of this level
         if key == "done" then
             level.next = menuLevel
         end
@@ -1310,42 +1313,49 @@ function gameOverLevel:inputpressed(key)
 end
 
 function gameOverLevel:update(dt)
-    self.nameEntryTimer = self.nameEntryTimer + dt
+    if self.ready then
+        self.nameEntryTimer = self.nameEntryTimer + dt
 
-    -- handle input
-    local inputs = self:readInputs()
-    -- inputs which can be repeated
-    local repeatableKeys = {
-        left = true,
-        right = true,
-        up = true,
-        down = true,
-    }
-    -- repeat the last key if appropriate
-    if self.lastKey ~= nil then
-        if inputs[self.lastKey] then
-            if repeatableKeys[self.lastKey] then
-                if (love.timer.getTime() - self.lastKeyTime) > self.keyRepeatDelay then
+        -- handle input
+        local inputs = self:readInputs()
+        -- inputs which can be repeated
+        local repeatableKeys = {
+            left = true,
+            right = true,
+            up = true,
+            down = true,
+        }
+        -- repeat the last key if appropriate
+        if self.lastKey ~= nil then
+            if inputs[self.lastKey] then
+                if repeatableKeys[self.lastKey] then
+                    if (love.timer.getTime() - self.lastKeyTime) > self.keyRepeatDelay then
+                        self.lastKeyTime = love.timer.getTime()
+                        self.keyRepeatDelay = 0.12
+                        self:inputpressed(self.lastKey)
+                    end
+                end
+            else
+                -- the key was released
+                self.lastKey = nil
+            end
+        end
+        -- if not repeating a key, then check for other keys
+        if self.lastKey == nil then
+            for key in pairs(inputs) do
+                if inputs[key] then
+                    self.keyRepeatDelay = 0.48
+                    self.lastKey = key
                     self.lastKeyTime = love.timer.getTime()
-                    self.keyRepeatDelay = 0.12
                     self:inputpressed(self.lastKey)
+                    break
                 end
             end
-        else
-            -- the key was released
-            self.lastKey = nil
         end
-    end
-    -- if not repeating a key, then check for other keys
-    if self.lastKey == nil then
-        for key in pairs(inputs) do
-            if inputs[key] then
-                self.keyRepeatDelay = 0.48
-                self.lastKey = key
-                self.lastKeyTime = love.timer.getTime()
-                self:inputpressed(self.lastKey)
-                break
-            end
+
+    else
+        if (love.timer.getTime() - self.started) > 2.0 then
+            self.ready = true
         end
     end
 end
