@@ -1042,6 +1042,7 @@ gameOverLevel = {}
 
 function gameOverLevel:load()
     -- expect score to be set elsewhere
+    self.name = ""
     self.score = self.score or 0
 
     -- load gameOver graphics
@@ -1051,8 +1052,16 @@ function gameOverLevel:load()
     self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
     self.titleColor = {255, 64, 32, 255}
     self.nameColor = {255, 255, 255, 255}
+    self.nameEntryIndexColor = {255, 0, 0, 255}
+    self.nameEntryPromptColor = {255, 192, 192, 255}
     self.shadowColor = {64, 64, 64, 255}
     self.scrollY = screen.HEIGHT
+
+    -- name entry
+    self.enteringName = isHighScore(self.score)
+    self.nameEntry = ""
+    self.nameEntryIndex = 1
+    self.nameEntryTimer = 0
 
     self.started = love.timer.getTime()
 end
@@ -1071,6 +1080,48 @@ end
 
 function gameOverLevel:blankLine(y)
     return y + self.titleSize
+end
+
+function gameOverLevel:printNameEntry(name, index, x, y)
+    local left = string.sub(name, 1, index - 1)
+    local middle = string.sub(name, index, index)
+    local right = string.sub(name, index + 1)
+
+    local leftWidth = self.nameFont:getWidth(left)
+    local middleWidth = math.max(self.nameFont:getWidth(middle), 2 * self.nameFont:getWidth("W"))
+    local rightWidth = self.nameFont:getWidth(right)
+
+    local frame = math.floor((self.nameEntryTimer * 1.5) % 2)
+
+    love.graphics.setFont(self.nameFont)
+    local height = self.nameFont:getHeight()
+
+    -- prefix
+    printAlignedShadowedText(left, x, y, "left", leftWidth, self.nameColor, self.shadowColor)
+    x = x + leftWidth
+
+    -- character being edited
+    for i = -2,2 do
+        local char = self:nextNameEntryChar(middle, -i)
+        local color
+        if i == 0 then
+            if frame == 0 then
+                color = self.nameEntryIndexColor
+            else
+                color = self.nameColor
+            end
+        else
+            color = self.nameEntryPromptColor
+        end
+        local text = char
+        if text == "" or text == " " then text = "…" end
+        printAlignedShadowedText(text, x, y - i * height, "center", middleWidth, color, self.shadowColor)
+    end
+    x = x + middleWidth
+
+    -- suffix
+    printAlignedShadowedText(right, x, y, "left", rightWidth, self.nameColor, self.shadowColor)
+    x = x + rightWidth
 end
 
 function gameOverLevel:draw()
@@ -1095,25 +1146,103 @@ function gameOverLevel:draw()
     y = self:printName("Your score: $"..toCurrency(math.floor(self.score)), y)
     y = self:blankLine(y)
     y = self:printName("ESC to restart", y)
+
+    if self.enteringName then
+        self:printNameEntry(self.nameEntry, self.nameEntryIndex, 0, y)
+    end
 end
 
 function gameOverLevel:gamepadpressed(joystick, button)
-    if ((button == "start" or button == "back") or (
-        (love.timer.getTime() - self.started > 2.0)
-            and (button == "a" or button == "b" or button == "x" or button == "y")
-        ))
-    then
-        level.next = menuLevel
+    if self.enteringName then
+        -- ...
+    else
+        if ((button == "start" or button == "back") or (
+            (love.timer.getTime() - self.started > 2.0)
+                and (button == "a" or button == "b" or button == "x" or button == "y")
+            ))
+        then
+            level.next = menuLevel
+        end
+    end
+end
+
+function gameOverLevel:selectedNameEntryChar()
+    if self.nameEntryIndex > string.len(self.nameEntry) then
+        char = " "
+    else
+        char = string.sub(self.nameEntry, self.nameEntryIndex, self.nameEntryIndex)
+    end
+    return char
+end
+
+function gameOverLevel:replaceSelectedNameEntryChar(newChar)
+    local s = (
+        string.sub(self.nameEntry, 1, self.nameEntryIndex - 1)
+        .. newChar
+        .. string.sub(self.nameEntry, self.nameEntryIndex + 1)
+    )
+    -- remove trailing spaces
+    s = string.gsub(s, "^(.-)%s*$", "%1")
+    return s
+end
+
+function gameOverLevel:nextNameEntryChar(char, direction)
+    local charIndex = string.find(HIGH_SCORE_NAME_CHARS, char, 1, true)
+    if charIndex == nil then return " " end
+    local newCharIndex = (charIndex + direction - 1) % string.len(HIGH_SCORE_NAME_CHARS) + 1
+    local newChar = string.sub(HIGH_SCORE_NAME_CHARS, newCharIndex, newCharIndex)
+    return newChar
+end
+
+function gameOverLevel:selectPreviousNameEntryIndex()
+    self.nameEntryIndex = math.max(1, self.nameEntryIndex - 1)
+    self.nameEntryTimer = 0
+end
+
+function gameOverLevel:selectNextNameEntryIndex()
+    local newIndex = math.min(string.len(self.nameEntry) + 1, self.nameEntryIndex + 1)
+    self.nameEntryIndex = math.min(newIndex, HIGH_SCORE_NAME_LENGTH)
+    self.nameEntryTimer = 0
+end
+
+function gameOverLevel:changeSelectedNameEntryChar(direction)
+    if direction >= 0 then direction = 1 else direction = -1 end
+    local char = self:selectedNameEntryChar()
+    local newChar = self:nextNameEntryChar(char, direction)
+    self.nameEntry = self:replaceSelectedNameEntryChar(newChar)
+    self.nameEntryTimer = 0
+end
+
+function gameOverLevel:commitNameEntry()
+    if self.nameEntry ~= "" then
+        self.name = self.nameEntry
+        self.enteringName = false
+        self.nameEntryTimer = 0
     end
 end
 
 function gameOverLevel:keypressed(key)
-    if key == "escape" or key == "return" then
-        level.next = menuLevel
+    if self.enteringName then
+        if key == "left" then
+            self:selectPreviousNameEntryIndex()
+        elseif key == "right" then
+            self:selectNextNameEntryIndex()
+        elseif key == "up" then
+            self:changeSelectedNameEntryChar(-1)
+        elseif key == "down" then
+            self:changeSelectedNameEntryChar(1)
+        elseif key == "return" then
+            self:commitNameEntry()
+        end
+    else
+        if key == "escape" or key == "return" then
+            level.next = menuLevel
+        end
     end
 end
 
-function gameOverLevel:update()
+function gameOverLevel:update(dt)
+    self.nameEntryTimer = self.nameEntryTimer + dt
 end
 
 -- --------------------------------------------------------------------------------------
@@ -1145,6 +1274,9 @@ function love.load()
     configureFightStickMapping()
 
     singlePixelImage = love.graphics.newImage("assets/singlePixelImage.jpg")
+
+    -- load high scores
+    loadHighScores()
 
     -- load the first level
     local l = menuLevel
@@ -2820,7 +2952,8 @@ end
 -- HIGH SCORES
 
 HIGH_SCORE_COUNT = 10
-HIGH_SCORE_NAME_LENGTH = 12
+HIGH_SCORE_NAME_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+HIGH_SCORE_NAME_LENGTH = 10
 HIGH_SCORE_FILENAME = "fracktheplanet-highscores.txt"
 highScores = {}
 
