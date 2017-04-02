@@ -1063,6 +1063,11 @@ function gameOverLevel:load()
     self.nameEntryIndex = 1
     self.nameEntryTimer = 0
 
+    -- key repeat
+    self.lastKey = nil
+    self.lastKeyTime = 0
+    self.keyRepeatDelay = 0
+
     self.started = love.timer.getTime()
 end
 
@@ -1152,20 +1157,6 @@ function gameOverLevel:draw()
     end
 end
 
-function gameOverLevel:gamepadpressed(joystick, button)
-    if self.enteringName then
-        -- ...
-    else
-        if ((button == "start" or button == "back") or (
-            (love.timer.getTime() - self.started > 2.0)
-                and (button == "a" or button == "b" or button == "x" or button == "y")
-            ))
-        then
-            level.next = menuLevel
-        end
-    end
-end
-
 function gameOverLevel:selectedNameEntryChar()
     if self.nameEntryIndex > string.len(self.nameEntry) then
         char = " "
@@ -1221,7 +1212,83 @@ function gameOverLevel:commitNameEntry()
     end
 end
 
-function gameOverLevel:keypressed(key)
+function gameOverLevel:readInputs()
+    local inputs = {}
+    local xAxisThreshold = 0.8
+    local yAxisThreshold = 0.4
+    local isFightStick = isGamepadFightStick()
+
+    -- control inputs
+    inputs.up = (
+        love.keyboard.isDown("up")
+        or love.keyboard.isDown("w")
+        or (isFightStick and (
+            isGamepadDown("dpup")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dpup")
+            or (getGamepadAxis("lefty") < -yAxisThreshold)
+            or (getGamepadAxis("righty") < -yAxisThreshold)
+            ))
+        )
+    inputs.down = (
+        love.keyboard.isDown("down")
+        or love.keyboard.isDown("s")
+        or (isFightStick and (
+            isGamepadDown("dpdown")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dpdown")
+            or (getGamepadAxis("lefty") > yAxisThreshold)
+            or (getGamepadAxis("righty") > yAxisThreshold)
+            ))
+        )
+    inputs.left = (
+        love.keyboard.isDown("left")
+        or love.keyboard.isDown("a")
+        or (isFightStick and (
+            isGamepadDown("dpleft")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dplet")
+            or (getGamepadAxis("leftx") < -xAxisThreshold)
+            or (getGamepadAxis("rightx") < -xAxisThreshold)
+            ))
+        )
+    inputs.right = (
+        love.keyboard.isDown("right")
+        or love.keyboard.isDown("d")
+        or (isFightStick and (
+            isGamepadDown("dpright")
+            ))
+        or (not isFightStick and (
+            isGamepadDown("dprigh")
+            or (getGamepadAxis("leftx") > xAxisThreshold)
+            or (getGamepadAxis("rightx") > xAxisThreshold)
+            ))
+        )
+    inputs.done = (
+        love.keyboard.isDown("return")
+        or love.keyboard.isDown("escape")
+        or (isFightStick and (
+            isGamepadDown("a")
+            or isGamepadDown("b")
+            or isGamepadDown("x")
+            or isGamepadDown("y")
+            or (getGamepadAxis("triggerleft") > 0.5)
+            or (getGamepadAxis("triggerright") > 0.5)
+            ))
+        or (not isFightStick and (
+            isGamepadDown("a")
+            or isGamepadDown("b")
+            or isGamepadDown("x")
+            or isGamepadDown("y")
+            ))
+        )
+    return inputs
+end
+
+function gameOverLevel:inputpressed(key)
     if self.enteringName then
         if key == "left" then
             self:selectPreviousNameEntryIndex()
@@ -1231,11 +1298,12 @@ function gameOverLevel:keypressed(key)
             self:changeSelectedNameEntryChar(-1)
         elseif key == "down" then
             self:changeSelectedNameEntryChar(1)
-        elseif key == "return" then
+        elseif key == "done" then
             self:commitNameEntry()
         end
     else
-        if key == "escape" or key == "return" then
+-- FIXME - move the delay to the start of this level
+        if key == "done" then
             level.next = menuLevel
         end
     end
@@ -1243,6 +1311,43 @@ end
 
 function gameOverLevel:update(dt)
     self.nameEntryTimer = self.nameEntryTimer + dt
+
+    -- handle input
+    local inputs = self:readInputs()
+    -- inputs which can be repeated
+    local repeatableKeys = {
+        left = true,
+        right = true,
+        up = true,
+        down = true,
+    }
+    -- repeat the last key if appropriate
+    if self.lastKey ~= nil then
+        if inputs[self.lastKey] then
+            if repeatableKeys[self.lastKey] then
+                if (love.timer.getTime() - self.lastKeyTime) > self.keyRepeatDelay then
+                    self.lastKeyTime = love.timer.getTime()
+                    self.keyRepeatDelay = 0.12
+                    self:inputpressed(self.lastKey)
+                end
+            end
+        else
+            -- the key was released
+            self.lastKey = nil
+        end
+    end
+    -- if not repeating a key, then check for other keys
+    if self.lastKey == nil then
+        for key in pairs(inputs) do
+            if inputs[key] then
+                self.keyRepeatDelay = 0.48
+                self.lastKey = key
+                self.lastKeyTime = love.timer.getTime()
+                self:inputpressed(self.lastKey)
+                break
+            end
+        end
+    end
 end
 
 -- --------------------------------------------------------------------------------------
