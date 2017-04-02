@@ -2817,6 +2817,120 @@ end
 -- --------------------------------------------------------------------------------------
 -- --------------------------------------------------------------------------------------
 --
+-- HIGH SCORES
+
+HIGH_SCORE_COUNT = 10
+HIGH_SCORE_NAME_LENGTH = 12
+HIGH_SCORE_FILENAME = "fracktheplanet-highscores.txt"
+highScores = {}
+
+function highScoreCompare(a, b)
+    if a.score > b.score then
+        return true
+    else
+        return false
+    end
+end
+
+function printHighScores()
+    print("HIGH SCORES")
+    for i, entry in pairs(highScores) do
+        print(string.format("%2d. %-" .. HIGH_SCORE_NAME_LENGTH .. "s %11d", i, entry.name, entry.score))
+    end
+    print("")
+end
+
+function loadHighScores()
+    local data, size = love.filesystem.read(HIGH_SCORE_FILENAME)
+    if data == nil then
+        -- Default high score chart
+        highScores = {
+            -- Play party top scores (once I started keeping track).
+            { name = "Jeff", score = 20453111401 },
+            { name = "Norgg", score = 20129453612 },
+            -- Creators' random scores, soon to be beaten.
+            { name = "Aaron", score = 91275799 },
+            { name = "Aidan", score = 63951408 },
+            { name = "Andy", score = 15021414 },
+            { name = "David", score = 77205195 },
+            { name = "Gordon", score = 43522807 },
+            { name = "Luke", score = 90853195 },
+        }
+        normalizeHighScoreTable()
+    else
+        highScores = {}
+        for name, score in string.gmatch(data, "([A-Za-z ]+) ([0-9]+)\n") do
+            local entry = {
+                name = normalizeHighScoreName(name),
+                score = normalizeHighScoreScore(score),
+            }
+            table.insert(highScores, entry)
+        end
+        normalizeHighScoreTable()
+    end
+end
+
+function saveHighScores()
+    local lines = {}
+    for i, entry in pairs(highScores) do
+        table.insert(lines, (entry.name .. " " .. tostring(entry.score)))
+    end
+    data = table.concat(lines, "\n") .. "\n"
+    love.filesystem.write(HIGH_SCORE_FILENAME, data)
+end
+
+function isHighScore(score)
+    if #highScores == 0 then
+        return true
+    else
+        lowestEntry = highScores[#highScores]
+        return (score > lowestEntry.score)
+    end
+end
+
+function addHighScore(score, name)
+    if isHighScore(score) then
+        local entry = {
+            name = normalizeHighScoreName(name),
+            score = normalizeHighScoreScore(score),
+        }
+        table.insert(highScores, entry)
+        normalizeHighScoreTable()
+    end
+end
+
+function normalizeHighScoreName(name)
+    name = tostring(name)
+    name = string.gsub(name, "[^A-Za-z ]", "")
+    name = string.sub(name, 1, HIGH_SCORE_NAME_LENGTH)
+    return name
+end
+
+function normalizeHighScoreScore(score)
+    score = tonumber(score, 10)
+    score = math.floor(score)
+    score = math.max(0, score)
+    return score
+end
+
+function normalizeHighScoreTable()
+    table.sort(highScores, highScoreCompare)
+    while #highScores > HIGH_SCORE_COUNT do
+        table.remove(highScores, #highScores)
+    end
+end
+
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------
+--
 -- DEBUG
 
 function dump(o)
