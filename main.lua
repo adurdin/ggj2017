@@ -364,6 +364,8 @@ function menuLevel:load()
             left = love.graphics.newImage("assets/stick-left.png"),
             middle = love.graphics.newImage("assets/stick-middle.png"),
             right = love.graphics.newImage("assets/stick-right.png"),
+            top = love.graphics.newImage("assets/stick-top.png"),
+            bottom = love.graphics.newImage("assets/stick-bottom.png"),
         },
     }
     for name,image in pairs(self.controlImages.button) do
@@ -422,21 +424,26 @@ function menuLevel:draw()
     local x = 200
     local y = 150
     local frame = math.floor((love.timer.getTime() * 1.8) % 4)
-    local stickImage;
+    local driveStick, drillStick
     if frame < 1 then
-        stickImage = self.controlImages.stick.left
+        driveStick = self.controlImages.stick.left
+        drillStick = self.controlImages.stick.middle
     elseif frame < 2 then
-        stickImage = self.controlImages.stick.middle
+        driveStick = self.controlImages.stick.middle
+        drillStick = self.controlImages.stick.top
     elseif frame < 3 then
-        stickImage = self.controlImages.stick.right
+        driveStick = self.controlImages.stick.right
+        drillStick = self.controlImages.stick.middle
     else
-        stickImage = self.controlImages.stick.middle
+        driveStick = self.controlImages.stick.middle
+        drillStick = self.controlImages.stick.bottom
     end
     self:printControl("drive", (x+10) * self.titleScale, (y+125) * self.titleScale, "left", 144 * self.titleScale)
-    love.graphics.draw(stickImage, (x+7) * self.titleScale, (y+190) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    self:printControl("drill\nup:\ndown:", (x+196) * self.titleScale, (y+104) * self.titleScale, "right", 144 * self.titleScale)
-    love.graphics.draw(self.controlImages.button.red, (x+355) * self.titleScale, (y+144) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    love.graphics.draw(self.controlImages.button.green, (x+353) * self.titleScale, (y+216) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    love.graphics.draw(driveStick, (x+7) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    self:printControl("drill", (x+196) * self.titleScale, (y+104) * self.titleScale, "right", 144 * self.titleScale)
+    love.graphics.draw(drillStick, (x+226) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    -- love.graphics.draw(self.controlImages.button.red, (x+355) * self.titleScale, (y+144) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    -- love.graphics.draw(self.controlImages.button.green, (x+353) * self.titleScale, (y+216) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
     self:printControl("scan", (x+468) * self.titleScale, (y+44) * self.titleScale, "left", 136 * self.titleScale)
     love.graphics.draw(self.controlImages.button.blue, (x+459) * self.titleScale, (y+104) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
     love.graphics.draw(self.controlImages.button.yellow, (x+531) * self.titleScale, (y+110) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
