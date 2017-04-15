@@ -416,6 +416,11 @@ function menuLevel:draw()
     menuImage = love.graphics.newImage("assets/menu.png")
     love.graphics.draw(menuImage, screen.WIDTH-500,screen.HEIGHT-500)
 
+    -- fractor should be on the menu too
+    menuImage = love.graphics.newImage("assets/fractormenu.png")
+    local shakeAmount = 4.0 * (love.math.random(-0.1,  0.05))
+    love.graphics.draw(menuImage, 0,screen.HEIGHT-410 + shakeAmount)
+
     -- draw titles, scaled
     local y = 50 * self.titleScale
     y = self:printTitle("FRACK the PLANET", y)
