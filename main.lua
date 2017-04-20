@@ -493,7 +493,10 @@ function menuLevel:draw()
         y = self:printName("Gordon Brown", y)
         y = self:printName("Luke Drummond", y)
     end
+
     love.graphics.setColor(255,255,255,255);
+    self:printName("    start", 700)
+    love.graphics.draw(self.controlImages.button.green, 426 * self.titleScale, 680 * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
 end
 
 function menuLevel:gamepadpressed(joystick, button)
