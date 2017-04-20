@@ -29,8 +29,8 @@ world = {
 
 screen = {
   DEFAULT_FULLSCREEN = false,
-  WINDOWED_WIDTH = 1024,
-  WINDOWED_HEIGHT = 768,
+  WINDOWED_WIDTH = 1920,--1024,
+  WINDOWED_HEIGHT = 1080,--768,
 }
 
 camera = {
