@@ -425,37 +425,67 @@ function menuLevel:draw()
     local y = 50 * self.titleScale
     y = self:printTitle("FRACK the PLANET", y)
 
-    -- Draw the controls
+    -- Draw the controls and credits
+    -- Five pages, each displayed for three seconds.
+    local page = math.floor((love.timer.getTime() / 3) % 5)
     local x = 200
     local y = 150
-    local frame = math.floor((love.timer.getTime() * 1.8) % 4)
-    local driveStick, drillStick
-    if frame < 1 then
+    -- Four frames, each shown for 0.5 seconds
+    local stickFrame = math.floor((love.timer.getTime() / 0.5) % 4)
+    -- Two frames, each shown for 0.5 seconds
+    local scanFrame = math.floor((love.timer.getTime() / 0.5) % 2)
+    -- Two frames, each shown for 0.25 seconds
+    local pumpFrame = math.floor((love.timer.getTime() / 0.25) % 2)
+    local driveStick, drillStick, scanColor, pumpColor1, pumpColor2
+    if stickFrame == 0 then
         driveStick = self.controlImages.stick.left
         drillStick = self.controlImages.stick.middle
-    elseif frame < 2 then
+    elseif stickFrame == 1 then
         driveStick = self.controlImages.stick.middle
         drillStick = self.controlImages.stick.top
-    elseif frame < 3 then
+    elseif stickFrame  == 2 then
         driveStick = self.controlImages.stick.right
         drillStick = self.controlImages.stick.middle
     else
         driveStick = self.controlImages.stick.middle
         drillStick = self.controlImages.stick.bottom
     end
-    self:printControl("drive", (x+10) * self.titleScale, (y+125) * self.titleScale, "left", 144 * self.titleScale)
-    love.graphics.draw(driveStick, (x+7) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    self:printControl("drill", (x+196) * self.titleScale, (y+104) * self.titleScale, "right", 144 * self.titleScale)
-    love.graphics.draw(drillStick, (x+226) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    -- love.graphics.draw(self.controlImages.button.red, (x+355) * self.titleScale, (y+144) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    -- love.graphics.draw(self.controlImages.button.green, (x+353) * self.titleScale, (y+216) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    self:printControl("scan", (x+468) * self.titleScale, (y+44) * self.titleScale, "left", 136 * self.titleScale)
-    love.graphics.draw(self.controlImages.button.blue, (x+459) * self.titleScale, (y+104) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    love.graphics.draw(self.controlImages.button.yellow, (x+531) * self.titleScale, (y+110) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    self:printControl("pump", (x+460) * self.titleScale, (y+280) * self.titleScale, "left", 143 * self.titleScale)
-    love.graphics.draw(self.controlImages.button.grey, (x+457) * self.titleScale, (y+196) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-    love.graphics.draw(self.controlImages.button.grey, (x+529) * self.titleScale, (y+202) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    if scanFrame == 0 then
+        scanColor = { 255, 255, 255, 255 }
+    else
+        scanColor = { 128, 128, 128, 255 }
+    end
+    if pumpFrame == 0 then
+        pumpColor1 = { 128, 128, 128, 255 }
+        pumpColor2 = { 255, 255, 255, 255 }
+    else
+        pumpColor1 = { 255, 255, 255, 255 }
+        pumpColor2 = { 128, 128, 128, 255 }
+    end
 
+    if page == 0 then
+        self:printControl("drive", (x+10) * self.titleScale, (y+125) * self.titleScale, "left", 144 * self.titleScale)
+        love.graphics.draw(driveStick, (x+7) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    elseif page == 1 then
+        self:printControl("scan", (x+468) * self.titleScale, (y+44) * self.titleScale, "left", 136 * self.titleScale)
+        love.graphics.setColor(unpack(scanColor));
+        love.graphics.draw(self.controlImages.button.blue, (x+459) * self.titleScale, (y+104) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        love.graphics.draw(self.controlImages.button.yellow, (x+531) * self.titleScale, (y+110) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    elseif page == 2 then
+        self:printControl("drill", (x+196) * self.titleScale, (y+104) * self.titleScale, "right", 144 * self.titleScale)
+        love.graphics.draw(drillStick, (x+226) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        -- love.graphics.draw(self.controlImages.button.red, (x+355) * self.titleScale, (y+144) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        -- love.graphics.draw(self.controlImages.button.green, (x+353) * self.titleScale, (y+216) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    elseif page == 3 then
+        self:printControl("pump", (x+460) * self.titleScale, (y+280) * self.titleScale, "left", 143 * self.titleScale)
+        love.graphics.setColor(unpack(pumpColor1));
+        love.graphics.draw(self.controlImages.button.grey, (x+457) * self.titleScale, (y+196) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        love.graphics.setColor(unpack(pumpColor2));
+        love.graphics.draw(self.controlImages.button.grey, (x+529) * self.titleScale, (y+202) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    else
+        -- FIXME: credits
+    end
+    love.graphics.setColor(255,255,255,255);
 end
 
 function menuLevel:gamepadpressed(joystick, button)
