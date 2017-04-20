@@ -28,9 +28,9 @@ world = {
 }
 
 screen = {
-  DEFAULT_FULLSCREEN = false,
-  WINDOWED_WIDTH = 1920,--1024,
-  WINDOWED_HEIGHT = 1080,--768,
+  DEFAULT_FULLSCREEN = true,
+  WINDOWED_WIDTH = 1920,
+  WINDOWED_HEIGHT = 1080,
 }
 
 camera = {
@@ -1239,6 +1239,7 @@ function love.load()
 
     -- set up the window
     setWindow(screen.DEFAULT_FULLSCREEN)
+    love.mouse.setVisible(false)
 
     -- get the current window size
     local windowWidth, windowHeight, flags = love.window.getMode()
