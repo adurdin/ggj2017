@@ -399,7 +399,7 @@ function menuLevel:printControl(text, x, y, alignment, limit)
 end
 
 function menuLevel:blankLine(y)
-    return y + self.titleSize
+    return y + self.nameSize
 end
 
 function menuLevel:draw()
@@ -431,8 +431,6 @@ function menuLevel:draw()
     -- Five pages, each displayed for three seconds.
     local now = (love.timer.getTime() - self.startTime)
     local page = math.floor((now / 3) % 5)
-    local x = 200
-    local y = 150
     -- Four frames, each shown for 0.5 seconds
     local stickFrame = math.floor((now / 0.5) % 4)
     -- Two frames, each shown for 0.5 seconds
@@ -484,7 +482,15 @@ function menuLevel:draw()
         love.graphics.setColor(unpack(pumpColor2));
         love.graphics.draw(self.controlImages.button.grey, (412+108) * self.titleScale, 328 * self.titleScale, 0, 3 * self.titleScale, 3 * self.titleScale)
     else
-        -- FIXME: credits
+        local y = 216
+        y = self:printName("Created by:", y)
+        y = self:blankLine(y)
+        y = self:printName("Aaron Dron", y)
+        y = self:printName("Aidan Dodds", y)
+        y = self:printName("Andy Durdin", y)
+        y = self:printName("David Farrell", y)
+        y = self:printName("Gordon Brown", y)
+        y = self:printName("Luke Drummond", y)
     end
     love.graphics.setColor(255,255,255,255);
 end
@@ -516,7 +522,7 @@ function menuLevel:updateTitleSizesAndFonts()
     self.titleScale = screen.WIDTH / 1024.0
     if self.titleScale ~= previousScale then
         self.titleSize = 100 * self.titleScale
-        self.nameSize = 28 * self.titleScale
+        self.nameSize = 36 * self.titleScale
         self.controlSize = 84 * self.titleScale
         self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
         self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
