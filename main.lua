@@ -750,6 +750,7 @@ function gameLevel:load()
     -- load the hud fonts
     gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 32)
     gameLevel.timerFont = love.graphics.newFont("assets/nullp.ttf", 48)
+    gameLevel.introFont = love.graphics.newFont("assets/nullp.ttf", 96)
     messages:load()
 
     -- load an image
@@ -807,23 +808,30 @@ function gameLevel:load()
         houses[x] = createHouse()
     end
 
-    -- set up the timer (+ a bit so people don't feel cheated)
-    gameLevel.timeRemaining = gameLevel.LEVEL_TIME + 0.9
+    -- set up the timer
+    gameLevel.timeRemaining = gameLevel.LEVEL_TIME
+    gameLevel.introTimeRemaining = 7.0
 end
 
 function gameLevel:update(dt)
-    -- count down until game over (except in debug mode)
-    if not debug.timerPaused then
-        local previousSecondsLeft = math.ceil(gameLevel.timeRemaining)
-        gameLevel.timeRemaining = gameLevel.timeRemaining - dt
-        local secondsLeft = math.ceil(gameLevel.timeRemaining)
-        if gameLevel.timeRemaining <= 0 then
-            gameOverLevel.score = player.score
-            level.next = gameOverLevel
-            return
-        else
-            if secondsLeft < 11 and previousSecondsLeft ~= secondsLeft then
-                soundEmit("tick", nil, 1.0 + 0.04 * (11 - secondsLeft))
+    local inIntro = (gameLevel.introTimeRemaining > 0)
+
+    if inIntro then
+        gameLevel.introTimeRemaining = gameLevel.introTimeRemaining - dt
+    else
+        -- count down until game over (except in debug mode)
+        if not debug.timerPaused then
+            local previousSecondsLeft = math.ceil(gameLevel.timeRemaining)
+            gameLevel.timeRemaining = gameLevel.timeRemaining - dt
+            local secondsLeft = math.ceil(gameLevel.timeRemaining)
+            if gameLevel.timeRemaining <= 0 then
+                gameOverLevel.score = player.score
+                level.next = gameOverLevel
+                return
+            else
+                if secondsLeft < 11 and previousSecondsLeft ~= secondsLeft then
+                    soundEmit("tick", nil, 1.0 + 0.04 * (11 - secondsLeft))
+                end
             end
         end
     end
@@ -844,7 +852,7 @@ function gameLevel:update(dt)
             people[x]:respawn()
         end
     end
-    
+
     if houses then
         for key, value in pairs(houses) do
             value:update()
@@ -976,6 +984,7 @@ end
 
 function gameLevel:draw()
     -- Every frame:
+    local inIntro = (gameLevel.introTimeRemaining > 0)
 
     -- draw the world
     sonarShader:send("sourcePosition", sonar.sourcePosition)
@@ -1052,32 +1061,63 @@ function gameLevel:draw()
     messages:draw()
     love.graphics.pop()
 
-    -- show the player score
-    love.graphics.push()
-    love.graphics.setFont(gameLevel.scoreFont)
-    local text = "$"..toCurrency(math.floor(player.drawScore))
-    local textColor
-    if player.drawScore < 0 then
-        textColor = {200, 32, 16, 255}
-    else
-        textColor = {0, 0, 0, 255}
-    end
-    printCenteredShadowedText(text, screen.WIDTH / 2, 10, textColor, {255, 255, 255, 192})
-    love.graphics.pop()
+    if inIntro then
+        -- FIXME: count down the intro:
+        -- "60 seconds"
+        -- "make as much money as you can"
+        -- "get fracking"
+        -- 3
+        -- 2
+        -- 1 
+        local secondsLeft = math.ceil(gameLevel.introTimeRemaining)
 
-    -- draw game time remaining
-    love.graphics.push()
-    love.graphics.setFont(gameLevel.timerFont)
-    local secondsLeft = math.ceil(gameLevel.timeRemaining)
-    local text = tostring(secondsLeft)
-    local shakeX, shakeY = 0, 0
-    if secondsLeft < 11 then
-        local shakeMagnitude = 1.5 * (11 - secondsLeft)
-        shakeX = love.math.random(-shakeMagnitude, shakeMagnitude)
-        shakeY = love.math.random(-shakeMagnitude, shakeMagnitude)
+        love.graphics.push()
+        love.graphics.setFont(gameLevel.introFont)
+        local textColor = { 255, 0, 0, 255 }
+        local text
+
+        if secondsLeft > 5 then
+            text = "You have " .. gameLevel.LEVEL_TIME .. " seconds..."
+        elseif secondsLeft > 3 then
+            text = "...to make as much\nmoney as you can!"
+        elseif secondsLeft > 2 then
+            text = "get ready..."
+        elseif secondsLeft > 1 then
+            text = "get set..."
+        else
+            text = "get fracking!"
+        end
+
+        printCenteredShadowedText(text, screen.WIDTH / 2, 550, textColor, {0, 0, 0, 192})
+        love.graphics.pop()
+    else
+        -- show the player score
+        love.graphics.push()
+        love.graphics.setFont(gameLevel.scoreFont)
+        local text = "$"..toCurrency(math.floor(player.drawScore))
+        local textColor
+        if player.drawScore < 0 then
+            textColor = {200, 32, 16, 255}
+        else
+            textColor = {0, 0, 0, 255}
+        end
+        printCenteredShadowedText(text, screen.WIDTH / 2, 10, textColor, {255, 255, 255, 192})
+        love.graphics.pop()
+
+        -- draw game time remaining
+        love.graphics.push()
+        love.graphics.setFont(gameLevel.timerFont)
+        local secondsLeft = math.ceil(gameLevel.timeRemaining)
+        local text = tostring(secondsLeft)
+        local shakeX, shakeY = 0, 0
+        if secondsLeft < 11 then
+            local shakeMagnitude = 1.5 * (11 - secondsLeft)
+            shakeX = love.math.random(-shakeMagnitude, shakeMagnitude)
+            shakeY = love.math.random(-shakeMagnitude, shakeMagnitude)
+        end
+        printCenteredShadowedText(text, screen.WIDTH / 2 + shakeX, 40 + shakeY, {0, 0, 0, 255}, {255, 255, 255, 192})
+        love.graphics.pop()
     end
-    printCenteredShadowedText(text, screen.WIDTH / 2 + shakeX, 40 + shakeY, {0, 0, 0, 255}, {255, 255, 255, 192})
-    love.graphics.pop()
 
     if debug.renderTerrainBuffer then
         terrain:draw(-512, 0, false)
@@ -1923,7 +1963,14 @@ end
 function player:update(dt)
     self.frameCounter = self.frameCounter + 1
 
-    local inputs = self:readInputs(dt)
+    local inIntro = (gameLevel.introTimeRemaining > 0)
+
+    local inputs
+    if inIntro then
+        inputs = {}
+    else
+        inputs = self:readInputs(dt)
+    end
 
     if self.mode == 'idle' then
         self:updateIdleMode(dt, inputs)
