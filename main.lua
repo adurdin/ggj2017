@@ -1229,6 +1229,11 @@ end
 --
 -- LOVE CALLBACKS
 
+function love.errhand(msg)
+    print(msg)
+    love.event.quit()
+end
+
 function love.load()
     -- set some default values
     debug.font = love.graphics.newFont(16)
