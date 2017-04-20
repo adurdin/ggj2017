@@ -1144,8 +1144,8 @@ function gameOverLevel:load()
     self.score = self.score or 0
 
     -- load gameOver graphics
-    self.titleSize = 48
-    self.nameSize = 36
+    self.titleSize = 96
+    self.nameSize = 72
     self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
     self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
     self.titleColor = {255, 64, 32, 255}
@@ -1188,12 +1188,12 @@ function gameOverLevel:draw()
     local shakeAmount = 4.0 * (love.math.random(-0.1,  0.05))
     love.graphics.draw(menuImage, 0,screen.HEIGHT-390 + shakeAmount)
 
-    local y = 50
+    local y = 100
     y = self:printTitle("- GAME OVER -", y)
     y = self:blankLine(y)
     y = self:printName("Your score: $"..toCurrency(math.floor(self.score)), y)
     y = self:blankLine(y)
-    y = self:printName("ESC to restart", y)
+    y = self:printName("Any button to restart", y)
 end
 
 function gameOverLevel:gamepadpressed(joystick, button)
