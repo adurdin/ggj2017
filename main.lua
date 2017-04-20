@@ -347,6 +347,8 @@ end
 menuLevel = {}
 
 function menuLevel:load()
+    self.startTime = love.timer.getTime()
+
     -- load credits sprites
     self:updateTitleSizesAndFonts()
     self.titleColor = {255, 64, 32, 255}
@@ -428,15 +430,16 @@ function menuLevel:draw()
 
     -- Draw the controls and credits
     -- Five pages, each displayed for three seconds.
-    local page = math.floor((love.timer.getTime() / 3) % 5)
+    local now = (love.timer.getTime() - self.startTime)
+    local page = math.floor((now / 3) % 5)
     local x = 200
     local y = 150
     -- Four frames, each shown for 0.5 seconds
-    local stickFrame = math.floor((love.timer.getTime() / 0.5) % 4)
+    local stickFrame = math.floor((now / 0.5) % 4)
     -- Two frames, each shown for 0.5 seconds
-    local scanFrame = math.floor((love.timer.getTime() / 0.5) % 2)
+    local scanFrame = math.floor((now / 0.5) % 2)
     -- Two frames, each shown for 0.25 seconds
-    local pumpFrame = math.floor((love.timer.getTime() / 0.25) % 2)
+    local pumpFrame = math.floor((now / 0.25) % 2)
     local driveStick, drillStick, scanColor, pumpColor1, pumpColor2
     if stickFrame == 0 then
         driveStick = self.controlImages.stick.left
@@ -465,24 +468,22 @@ function menuLevel:draw()
     end
 
     if page == 0 then
-        self:printControl("drive", (x+10) * self.titleScale, (y+125) * self.titleScale, "left", 144 * self.titleScale)
-        love.graphics.draw(driveStick, (x+7) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        self:printControl("drive:", 0, 216 * self.titleScale, "center", screen.WIDTH)
+        love.graphics.draw(driveStick, 412 * self.titleScale, 316 * self.titleScale, 0, 3 * self.titleScale, 3 * self.titleScale)
     elseif page == 1 then
-        self:printControl("scan", (x+468) * self.titleScale, (y+44) * self.titleScale, "left", 136 * self.titleScale)
+        self:printControl("scan:", 0 * self.titleScale, 216 * self.titleScale, "center", screen.WIDTH)
         love.graphics.setColor(unpack(scanColor));
-        love.graphics.draw(self.controlImages.button.blue, (x+459) * self.titleScale, (y+104) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-        love.graphics.draw(self.controlImages.button.yellow, (x+531) * self.titleScale, (y+110) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        love.graphics.draw(self.controlImages.button.blue, 412 * self.titleScale, 328 * self.titleScale, 0, 3 * self.titleScale, 3 * self.titleScale)
+        love.graphics.draw(self.controlImages.button.yellow, (412+108) * self.titleScale, 328 * self.titleScale, 0, 3 * self.titleScale, 3 * self.titleScale)
     elseif page == 2 then
-        self:printControl("drill", (x+196) * self.titleScale, (y+104) * self.titleScale, "right", 144 * self.titleScale)
-        love.graphics.draw(drillStick, (x+226) * self.titleScale, (y+171) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-        -- love.graphics.draw(self.controlImages.button.red, (x+355) * self.titleScale, (y+144) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
-        -- love.graphics.draw(self.controlImages.button.green, (x+353) * self.titleScale, (y+216) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        self:printControl("drill:", 0 * self.titleScale, 216 * self.titleScale, "center", screen.WIDTH)
+        love.graphics.draw(drillStick, 412 * self.titleScale, 316 * self.titleScale, 0, 3 * self.titleScale, 3 * self.titleScale)
     elseif page == 3 then
-        self:printControl("pump", (x+460) * self.titleScale, (y+280) * self.titleScale, "left", 143 * self.titleScale)
+        self:printControl("pump:", 0 * self.titleScale, 216 * self.titleScale, "center", screen.WIDTH)
         love.graphics.setColor(unpack(pumpColor1));
-        love.graphics.draw(self.controlImages.button.grey, (x+457) * self.titleScale, (y+196) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        love.graphics.draw(self.controlImages.button.grey, 412 * self.titleScale, 328 * self.titleScale, 0, 3 * self.titleScale, 3 * self.titleScale)
         love.graphics.setColor(unpack(pumpColor2));
-        love.graphics.draw(self.controlImages.button.grey, (x+529) * self.titleScale, (y+202) * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+        love.graphics.draw(self.controlImages.button.grey, (412+108) * self.titleScale, 328 * self.titleScale, 0, 3 * self.titleScale, 3 * self.titleScale)
     else
         -- FIXME: credits
     end
@@ -517,7 +518,7 @@ function menuLevel:updateTitleSizesAndFonts()
     if self.titleScale ~= previousScale then
         self.titleSize = 100 * self.titleScale
         self.nameSize = 28 * self.titleScale
-        self.controlSize = 56 * self.titleScale
+        self.controlSize = 84 * self.titleScale
         self.titleFont = love.graphics.newFont("assets/nullp.ttf", self.titleSize)
         self.nameFont = love.graphics.newFont("assets/nullp.ttf", self.nameSize)
         self.controlFont = love.graphics.newFont("assets/nullp.ttf", self.controlSize)
