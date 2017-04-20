@@ -399,6 +399,12 @@ function menuLevel:printControl(text, x, y, alignment, limit)
     return y + self.nameSize
 end
 
+function menuLevel:printCaption(text, x, y, alignment, limit)
+    love.graphics.setFont(self.nameFont)
+    printAlignedShadowedText(text, x, y, alignment, limit, self.nameColor, self.shadowColor)
+    return y + self.nameSize
+end
+
 function menuLevel:blankLine(y)
     return y + self.nameSize
 end
@@ -495,8 +501,8 @@ function menuLevel:draw()
     end
 
     love.graphics.setColor(255,255,255,255);
-    self:printName("    start", 700)
-    love.graphics.draw(self.controlImages.button.green, 426 * self.titleScale, 680 * self.titleScale, 0, 2 * self.titleScale, 2 * self.titleScale)
+    self:printCaption("start", 510 * self.titleScale, 700 * self.titleYScale, "left", screen.WIDTH)
+    love.graphics.draw(self.controlImages.button.green, 426 * self.titleScale, 680 * self.titleYScale, 0, 2 * self.titleScale, 2 * self.titleScale)
 end
 
 function menuLevel:gamepadpressed(joystick, button)
@@ -524,6 +530,7 @@ end
 function menuLevel:updateTitleSizesAndFonts()
     local previousScale = self.titleScale
     self.titleScale = screen.WIDTH / 1024.0
+    self.titleYScale = screen.HEIGHT / 768.0
     if self.titleScale ~= previousScale then
         self.titleSize = 100 * self.titleScale
         self.nameSize = 36 * self.titleScale
