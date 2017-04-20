@@ -749,8 +749,8 @@ function gameLevel:load()
     print("seed: "..dump(gameLevel.seed))
 
     -- load the hud fonts
-    gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 32)
-    gameLevel.timerFont = love.graphics.newFont("assets/nullp.ttf", 48)
+    gameLevel.scoreFont = love.graphics.newFont("assets/nullp.ttf", 64)
+    gameLevel.timerFont = love.graphics.newFont("assets/nullp.ttf", 96)
     gameLevel.introFont = love.graphics.newFont("assets/nullp.ttf", 96)
     messages:load()
 
@@ -1074,7 +1074,7 @@ function gameLevel:draw()
 
         love.graphics.push()
         love.graphics.setFont(gameLevel.introFont)
-        local textColor = { 255, 0, 0, 255 }
+        local textColor = { 255, 255, 255, 255 }
         local text
 
         if secondsLeft > 5 then
@@ -1116,7 +1116,7 @@ function gameLevel:draw()
             shakeX = love.math.random(-shakeMagnitude, shakeMagnitude)
             shakeY = love.math.random(-shakeMagnitude, shakeMagnitude)
         end
-        printCenteredShadowedText(text, screen.WIDTH / 2 + shakeX, 40 + shakeY, {0, 0, 0, 255}, {255, 255, 255, 192})
+        printCenteredShadowedText(text, screen.WIDTH / 2 + shakeX, 60 + shakeY, {0, 0, 0, 255}, {255, 255, 255, 192})
         love.graphics.pop()
     end
 
